@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="margin-top: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h2><i class="fas fa-history"></i> Full Payment History</h2>
+        <a href="{% url 'finance' %}" class="btn" style="background: #7f8c8d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Back to Dashboard</a>
+    </div>
+
+    <div class="card" style="background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <input type="text" id="historySearch" placeholder="Search by Student Name, Admission No, or Date..." 
+               style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+    </div>
+
+    <div class="card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <table style="width: 100%; border-collapse: collapse;" id="historyTable">
+            <thead>
+                <tr style="background: #2c3e50; color: white; text-align: left;">
+                    <th style="padding: 12px; border: 1px solid #ddd;">Date Paid</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Adm No.</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Course</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Sem</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">Amount (Ksh)</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Receipt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">{{ payment.date|date:"d M, Y" }} <br><small style="color: #95a5a6;">{{ payment.date|date:"H:i" }}</small></td>
+                    <td style="padding: 12px; font-weight: bold;">{{ payment.student.name }}</td>
+                    <td style="padding: 12px;">{{ payment.student.admission_number }}</td>
+                    <td style="padding: 12px;">{{ payment.student.course }}</td>
+                    <td style="padding: 12px; text-align: center;">{{ payment.semester }}</td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; color: #27ae60;">{{ payment.amount }}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <a href="{% url 'print_receipt' payment.id %}" target="_blank" 
+                           style="color: #3498db; text-decoration: none; font-size: 20px;" title="Print Receipt">
+                            🖨️
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="padding: 30px; text-align: center; color: #7f8c8d;">
+                        No payment records found in the database.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.getElementById('historySearch').addEventListener('keyup', function() {
+        let filter = this.value.toUpperCase();
+        let rows = document.querySelector("#historyTable tbody").rows;
+        
+        for (let i = 0; i < rows.length; i++) {
+            let rowText = rows[i].textContent.toUpperCase();
+            rows[i].style.display = rowText.includes(filter) ? "" : "none";
+        }
+    });
+</script>
+{% endblock %}

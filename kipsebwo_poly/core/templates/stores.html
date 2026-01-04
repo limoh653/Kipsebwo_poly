@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Stores Department</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-add">Add to Inventory</button>
+</form>
+
+<table>
+    <tr>
+        <th>Item</th><th>Quantity</th><th>Category</th>
+    </tr>
+    {% for i in items %}
+    <tr>
+        <td>{{ i.item_name }}</td>
+        <td>{{ i.quantity }}</td>
+        <td>{{ i.category }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

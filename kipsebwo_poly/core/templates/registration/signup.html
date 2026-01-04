@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Registration | Kipsebwo Poly</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .signup-container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        h2 { text-align: center; color: #1a202c; margin-bottom: 10px; }
+        p.subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 25px; }
+        
+        /* Styling the Django Form */
+        form p { margin-bottom: 15px; }
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 5px; 
+            border: 1px solid #cbd5e0; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+        }
+        ul.errorlist { color: #e53e3e; font-size: 13px; padding-left: 20px; }
+        
+        .btn-register { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #2f855a; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .btn-register:hover { background-color: #276749; }
+        
+        .footer-links { text-align: center; margin-top: 20px; font-size: 14px; color: #4a5568; }
+        .footer-links a { color: #3182ce; text-decoration: none; font-weight: bold; }
+        .footer-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="signup-container">
+    <h2>Staff Registration</h2>
+    <p class="subtitle">Create an account to manage Kipsebwo Polytechnic departments.</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-register">Create Account</button>
+    </form>
+
+    <div class="footer-links">
+        Already have an account? <a href="{% url 'login' %}">Log In</a>
+    </div>
+</div>
+
+</body>
+</html>

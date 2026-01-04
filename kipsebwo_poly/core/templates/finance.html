@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Finance Department Dashboard</h2>
+        <a href="{% url 'payment_history' %}" class="btn" style="background: #8e44ad; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Full Payment History</a>
+    </div>
+
+    <div class="card" style="background: white; padding: 20px; margin-bottom: 30px; border-radius: 8px; border-top: 5px solid #27ae60; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3>Set Course Fee Structure</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                <input type="hidden" name="add_structure" value="1">
+                {% for field in form %}
+                    <div>
+                        <label style="font-size: 13px; font-weight: bold;">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn" style="margin-top: 15px; background: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+                Save New Structure
+            </button>
+        </form>
+        
+        <h4 style="margin-top: 25px;">Current Fee Structures</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr style="background: #f8f9fa;">
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Course</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">Sem 1 (Ksh)</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">Sem 2 (Ksh)</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">Sem 3 (Ksh)</th>
+            </tr>
+            {% for f in structures %}
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{{ f.course }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ f.semester_1 }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ f.semester_2 }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ f.semester_3 }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card" style="background: white; padding: 20px; margin-bottom: 30px; border-radius: 8px; border-top: 5px solid #f39c12; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="color: #e67e22;">Recent Transactions</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead style="background: #fdf2e9;">
+                <tr>
+                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Date</th>
+                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Student</th>
+                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Sem</th>
+                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: right;">Amount (Ksh)</th>
+                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ payment.date|date:"d M, Y" }}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ payment.student.name }}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">{{ payment.semester }}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">{{ payment.amount }}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                        <a href="{% url 'print_receipt' payment.id %}" target="_blank" style="color: #27ae60; text-decoration: none; font-weight: bold;">
+                            🖨️ Print Receipt
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: 20px; text-align: center; color: #95a5a6;">No recent payments recorded.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <hr>
+
+    <div style="margin: 20px 0;">
+        <h3>Student Fee Balances</h3>
+        <form method="GET" style="display: flex; gap: 10px;">
+            <input type="text" name="search" placeholder="Search student name or Adm No..." value="{{ search_query }}" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button type="submit" class="btn" style="background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Search Balances</button>
+        </form>
+    </div>
+
+    {% for course, students in finance_grouped.items %}
+        {% if students %}
+            <div style="margin-bottom: 40px;">
+                <h3 style="background:#16a085; color:white; padding:12px; border-radius: 4px; margin-bottom: 0;">
+                    Course: {{ course }}
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <thead>
+                        <tr style="background: #ecf0f1;">
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Student Name</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Sem 1 Bal</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Sem 2 Bal</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Sem 3 Bal</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Total Due</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <strong>{{ s.name }}</strong><br>
+                                <small style="color: #7f8c8d;">{{ s.admission_number }}</small>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ s.feebalance.sem1_bal }}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ s.feebalance.sem2_bal }}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ s.feebalance.sem3_bal }}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #c0392b;">
+                                {{ s.feebalance.total_due }}
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                                <a href="{% url 'process_payment' s.id %}" class="btn" style="background: #2980b9; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">
+                                    Record Payment
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% empty %}
+        <div style="padding: 40px; text-align: center; background: white; border: 1px dashed #ccc;">
+            <p>No student financial records found. Ensure you have created Fee Structures and admitted students.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

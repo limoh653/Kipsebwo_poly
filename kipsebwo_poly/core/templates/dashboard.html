@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h1>Welcome to the School Management System</h1>
+    <p>Please select a department to proceed:</p>
+    <hr>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div style="padding: 20px; border: 1px solid #ccc; text-align: center;">
+            <h3>Admissions</h3>
+            <a href="{% url 'admissions' %}" class="btn btn-add">Enter Department</a>
+        </div>
+        <div style="padding: 20px; border: 1px solid #ccc; text-align: center;">
+            <h3>Examinations</h3>
+            <a href="{% url 'examinations' %}" class="btn btn-add">Enter Department</a>
+        </div>
+        <div style="padding: 20px; border: 1px solid #ccc; text-align: center;">
+            <h3>Finance</h3>
+            <a href="{% url 'finance' %}" class="btn btn-add">Enter Department</a>
+        </div>
+        <div style="padding: 20px; border: 1px solid #ccc; text-align: center;">
+            <h3>Stores</h3>
+            <a href="{% url 'stores' %}" class="btn btn-add">Enter Department</a>
+        </div>
+    </div>
+{% endblock %}
