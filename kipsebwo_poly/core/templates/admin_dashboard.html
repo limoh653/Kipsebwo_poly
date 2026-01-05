@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <h2>Admin Management Portal</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <div>
+            <div style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 5px; margin-bottom: 20px;">
+                <h3>⚠️ Pending Approvals</h3>
+                {% for u in pending_users %}
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eec; padding: 5px 0;">
+                        <span>{{ u.username }}</span>
+                        <a href="{% url 'approve_user' u.id %}" style="color: green; font-weight: bold;">Approve Access</a>
+                    </div>
+                {% empty %}
+                    <p>No new requests.</p>
+                {% endfor %}
+            </div>
+
+            <div style="background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+                <h3>Active Staff</h3>
+                {% for u in active_users %}
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 5px 0;">
+                        <span>{{ u.username }}</span>
+                        <a href="{% url 'delete_user' u.id %}" onclick="return confirm('Are you sure?')" style="color: red;">Delete</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="background: #2c3e50; color: white; padding: 15px; border-radius: 5px; height: 500px; overflow-y: scroll;">
+            <h3>📋 System Activity Log</h3>
+            {% for log in logs %}
+                <div style="border-bottom: 1px solid #3e5060; padding: 8px 0;">
+                    <strong style="color: #3498db;">{{ log.user.username }}</strong>: {{ log.action }}<br>
+                    <small style="color: #bdc3c7;">{{ log.timestamp|date:"M d, H:i" }}</small>
+                </div>
+            {% empty %}
+                <p>No activity recorded yet.</p>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

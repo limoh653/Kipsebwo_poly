@@ -35,7 +35,7 @@ ROOT_URLCONF = 'kipsebwo_poly.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Cleaner Path syntax
+        'DIRS': [BASE_DIR / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,25 +72,25 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # --- Internationalization ---
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Africa/Nairobi' # Updated for Kenya
+TIME_ZONE = 'Africa/Nairobi' 
 USE_I18N = True
 USE_TZ = True
 
 # --- Static Files (CSS, JavaScript, Images) ---
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-# STATIC_ROOT is used during production (python manage.py collectstatic)
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # --- Authentication Redirects ---
-# Using named URLs from your urls.py is safer than hardcoded paths
-LOGIN_REDIRECT_URL = 'dashboard'
+# UPDATED: Pointing to the new redirector view in views.py
+LOGIN_REDIRECT_URL = 'redirect_after_login'
 LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = 'login'
 
 # --- Default Auto Field ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- Messages (Used for "Payment Success" or "Student Deleted" alerts) ---
+# --- Messages Configuration ---
 from django.contrib.messages import constants as messages
 MESSAGE_TAGS = {
     messages.DEBUG: 'secondary',

@@ -4,8 +4,16 @@
     <title>School Management System</title>
     <style>
         body { font-family: Arial; margin: 0; padding: 20px; background: #f4f4f4; }
-        nav { background: #333; color: #fff; padding: 10px; margin-bottom: 20px; }
-        nav a { color: #fff; margin-right: 15px; text-decoration: none; }
+        
+        /* Updated Nav for better alignment */
+        nav { background: #333; color: #fff; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; }
+        nav a { color: #fff; margin-right: 20px; text-decoration: none; font-size: 16px; }
+        nav a:hover { text-decoration: underline; color: #ddd; }
+        
+        /* Special style for the Admin Link */
+        .admin-link { background: #e67e22; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
+        .admin-link:hover { background: #d35400; text-decoration: none; }
+
         .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
@@ -13,17 +21,46 @@
         .btn { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; }
         .btn-add { background: green; color: white; }
         .btn-del { background: red; color: white; }
+
+        /* Message Styles (Success/Error/Info) */
+        .messages { list-style: none; padding: 0; margin-bottom: 20px; }
+        .messages li { padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .messages .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .messages .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .messages .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .messages .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
     </style>
 </head>
 <body>
     <nav>
         <a href="{% url 'dashboard' %}"><b>HOME DASHBOARD</b></a>
+
+        {% if user.is_authenticated and user.is_staff %}
+            <a href="{% url 'admin_management' %}" class="admin-link">Manage Users & Logs</a>
+        {% endif %}
+
+        <div style="flex-grow: 1;"></div>
+
         {% if user.is_authenticated %}
-            <span>Welcome, {{ user.username }}</span>
-            <form action="{% url 'logout' %}" method="post" style="display:inline;">{% csrf_token %}<button type="submit">Logout</button></form>
+            <span style="margin-right: 15px;">Welcome, {{ user.username }}</span>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" style="background:none; border:none; color:#ccc; cursor:pointer; text-decoration:underline;">Logout</button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}" style="font-weight: bold;">Login</a>
         {% endif %}
     </nav>
+
     <div class="container">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </div>
 </body>
