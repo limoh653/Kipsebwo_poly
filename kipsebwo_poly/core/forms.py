@@ -1,5 +1,6 @@
 from django import forms
-from .models import Student, Examination, FeeStructure, StoreItem
+from .models import Student, Examination, FeeStructure
+from .models import Consumable, PermanentEquipment
 
 class StudentForm(forms.ModelForm):
     class Meta:
@@ -23,7 +24,20 @@ class FeeForm(forms.ModelForm):
         model = FeeStructure
         fields = '__all__'
 
-class StoreForm(forms.ModelForm):
+
+class ConsumableForm(forms.ModelForm):
     class Meta:
-        model = StoreItem
-        fields = '__all__'
+        model = Consumable
+        fields = ['item_name', 'date_supplied', 'balance_stock', 'last_date_issued']
+        widgets = {
+            'date_supplied': forms.DateInput(attrs={'type': 'date'}),
+            'last_date_issued': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+class EquipmentForm(forms.ModelForm):
+    class Meta:
+        model = PermanentEquipment
+        fields = ['item_name', 'date_delivered', 'condition']
+        widgets = {
+            'date_delivered': forms.DateInput(attrs={'type': 'date'}),
+        }

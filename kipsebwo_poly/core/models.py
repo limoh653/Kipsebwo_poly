@@ -99,20 +99,45 @@ class FeeBalance(models.Model):
     def total_due(self):
         return self.sem1_bal + self.sem2_bal + self.sem3_bal
 
-# 6. Payment History
+## 6. Payment History
 class Payment(models.Model):
     SEM_CHOICES = [('1', 'Semester 1'), ('2', 'Semester 2'), ('3', 'Semester 3')]
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     semester = models.CharField(max_length=1, choices=SEM_CHOICES)
+    # Added the missing field that the view is looking for
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
 
-# 7. Stores Model
-class StoreItem(models.Model):
-    item_name = models.CharField(max_length=100)
-    quantity = models.IntegerField()
-    category = models.CharField(max_length=100)
+    def __str__(self):
+        return f"{self.student.name} - {self.amount} ({self.date.strftime('%Y-%m-%d')})"
 
+# --- STORES MODELS ---
+
+class Consumable(models.Model):
+    item_name = models.CharField(max_length=200)
+    date_supplied = models.DateField()
+    balance_stock = models.PositiveIntegerField(default=0)
+    last_date_issued = models.DateField(null=True, blank=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"{self.item_name} ({self.balance_stock} left)"
+
+class PermanentEquipment(models.Model):
+    CONDITION_CHOICES = [
+        ('Good', 'Good'),
+        ('Fair', 'Fair'),
+        ('Damaged', 'Damaged'),
+        ('Under Repair', 'Under Repair'),
+    ]
+    item_name = models.CharField(max_length=200)
+    date_delivered = models.DateField()
+    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default='Good')
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"{self.item_name} - {self.condition}"
 # --- SIGNALS ---
 @receiver(post_save, sender=Student)
 def create_student_financials(sender, instance, created, **kwargs):

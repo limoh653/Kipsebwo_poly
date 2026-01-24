@@ -14,8 +14,8 @@ from django.contrib import messages
 
 class CustomLoginView(LoginView):
     """
-    Overridden LoginView that checks if an account exists but is inactive,
-    showing a specific message for users waiting for admin approval.
+    Checks if an account exists but is inactive, showing a warning
+    message specifically for users waiting for admin approval.
     """
     template_name = 'registration/login.html'
     
@@ -34,15 +34,15 @@ def dashboard(request):
 @login_required
 def redirect_after_login(request):
     """
-    Traffic controller: Sends Admins to the backend and Staff to the dashboard.
+    Traffic controller: Now sends EVERYONE (Admins and Staff) 
+    directly to the custom dashboard instead of the Django backend.
     """
-    if request.user.is_staff or request.user.is_superuser:
-        return redirect('/admin/')
     return redirect('dashboard')
 
 def register_view(request):
     """
-    Registers users as 'Inactive' (is_active=False) by default.
+    Registers users as 'Inactive' (is_active=False).
+    Shows a success message directing them to wait for approval.
     """
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -51,7 +51,7 @@ def register_view(request):
             user.is_active = False  
             user.save()
             AuditTrail.objects.create(user=user, action="Registered (Pending Approval)")
-            messages.success(request, "Registration successful! Please wait for Admin approval.")
+            messages.success(request, "Registration successful! Please wait for Admin approval before logging in.")
             return redirect('login')
     else:
         form = UserCreationForm()
@@ -173,6 +173,8 @@ def delete_student(request, pk):
 
 # --- EXAMINATIONS ---
 
+# --- EXAMINATIONS ---
+
 @login_required
 def examinations_view(request):
     query = request.GET.get('q')
@@ -184,17 +186,38 @@ def examinations_view(request):
         exams = Examination.objects.all().select_related('student').order_by('student__course', 'year_of_study', 'semester', 'student__name')
 
     if request.method == 'POST':
+        # 1. Handle Deletion Logging
         if 'delete_id' in request.POST:
             exam_to_delete = get_object_or_404(Examination, id=request.POST.get('delete_id'))
+            student_name = exam_to_delete.student.name
+            subject = exam_to_delete.subject_name
+            
             exam_to_delete.delete()
+            
+            # Create Audit Log for deletion
+            AuditTrail.objects.create(
+                user=request.user, 
+                action=f"Deleted marks for {student_name} (Subject: {subject})"
+            )
+            
             messages.success(request, "Record deleted successfully.")
             return redirect('examinations')
 
+        # 2. Handle Saving/Editing Logging
         instance_id = request.POST.get('instance_id')
         instance = Examination.objects.filter(id=instance_id).first() if instance_id else None
         form = ExaminationForm(request.POST, instance=instance)
+        
         if form.is_valid():
-            form.save()
+            exam = form.save()
+            
+            # Create Audit Log for adding/editing
+            action_type = "Updated" if instance_id else "Recorded"
+            AuditTrail.objects.create(
+                user=request.user, 
+                action=f"{action_type} marks for {exam.student.name} (Subject: {exam.subject_name})"
+            )
+            
             messages.success(request, "Marks saved successfully.")
             return redirect('examinations')
     else:
@@ -203,21 +226,61 @@ def examinations_view(request):
         form = ExaminationForm(instance=instance)
 
     return render(request, 'examinations.html', {'form': form, 'exams': exams, 'student': student, 'query': query})
-
 # --- STORES ---
-
 @login_required
 def stores_view(request):
-    items = StoreItem.objects.all()
-    if request.method == 'POST':
-        form = StoreForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('stores')
-    else:
-        form = StoreForm()
-    return render(request, 'stores.html', {'items': items, 'form': form})
+    consumables = Consumable.objects.all()
+    equipment = PermanentEquipment.objects.all()
+    
+    # Initialize forms
+    c_form = ConsumableForm()
+    e_form = EquipmentForm()
 
+    if request.method == 'POST':
+        # Handle Consumable Submission
+        if 'add_consumable' in request.POST:
+            c_form = ConsumableForm(request.POST)
+            if c_form.is_valid():
+                item = c_form.save(commit=False)
+                item.added_by = request.user
+                item.save()
+                AuditTrail.objects.create(user=request.user, action=f"Added Consumable: {item.item_name}")
+                messages.success(request, "Consumable added successfully")
+                return redirect('stores')
+
+        # Handle Equipment Submission
+        elif 'add_equipment' in request.POST:
+            e_form = EquipmentForm(request.POST)
+            if e_form.is_valid():
+                item = e_form.save(commit=False)
+                item.added_by = request.user
+                item.save()
+                AuditTrail.objects.create(user=request.user, action=f"Added Equipment: {item.item_name}")
+                messages.success(request, "Equipment added successfully")
+                return redirect('stores')
+
+    context = {
+        'consumables': consumables,
+        'equipment': equipment,
+        'c_form': c_form,
+        'e_form': e_form,
+    }
+    return render(request, 'stores.html', context)
+
+# --- CRUD FUNCTIONALITIES ---
+
+@login_required
+def delete_store_item(request, item_type, pk):
+    if item_type == 'consumable':
+        item = get_object_or_404(Consumable, pk=pk)
+    else:
+        item = get_object_or_404(PermanentEquipment, pk=pk)
+    
+    item_name = item.item_name
+    item.delete()
+    AuditTrail.objects.create(user=request.user, action=f"Deleted {item_type}: {item_name}")
+    messages.warning(request, f"{item_name} removed from inventory.")
+    return redirect('stores')
 # --- USER MANAGEMENT ---
 
 @user_passes_test(lambda u: u.is_staff)

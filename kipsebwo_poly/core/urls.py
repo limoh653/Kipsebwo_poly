@@ -33,6 +33,7 @@ urlpatterns = [
 
     # --- Stores Department ---
     path('stores/', views.stores_view, name='stores'),
+    path('stores/delete/<str:item_type>/<int:pk>/', views.delete_store_item, name='delete_store_item'),
 
     # --- CUSTOM ADMIN PANEL (User Management & Logs) ---
     path('admin-panel/', views.admin_management_view, name='admin_management'),
