@@ -9,6 +9,53 @@ from decimal import Decimal
 from .models import *
 from .forms import *
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from .forms import RegistrationForm
+from .models import UserProfile
+
+# 1. Access Control Decorator
+def department_required(dept_name):
+    def decorator(view_func):
+        @login_required
+        def _wrapped_view(request, *args, **kwargs):
+            profile = getattr(request.user, 'userprofile', None)
+            if profile and profile.department == dept_name and profile.is_approved:
+                return view_func(request, *args, **kwargs)
+            raise PermissionDenied # Redirects to a 403 error page
+        return _wrapped_view
+    return decorator
+
+# 2. Registration View (Updated with Profile and Password Hashing)
+def register_view(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            # commit=False allows us to modify the user object before saving to DB
+            user = form.save(commit=False)
+            
+            # Manually hash the password from the form
+            user.set_password(form.cleaned_data['password'])
+            
+            # Keep user 'inactive' so they can't log in until Admin approves
+            user.is_active = False 
+            user.save()
+            
+            # Create the UserProfile with the chosen department
+            selected_dept = form.cleaned_data.get('department')
+            UserProfile.objects.create(
+                user=user, 
+                department=selected_dept,
+                is_approved=False
+            )
+            
+            # Create Audit Log
+            AuditTrail.objects.create(user=user, action="Registered (Pending Approval)")
+            
+            return render(request, 'registration_pending.html', {'dept': selected_dept})
+    else:
+        form = RegistrationForm()
+        
+    return render(request, 'register.html', {'form': form})
 
 # --- AUTH & REDIRECT LOGIC ---
 
@@ -29,36 +76,43 @@ class CustomLoginView(LoginView):
 
 @login_required
 def dashboard(request):
+    """Fallback dashboard if needed"""
     return render(request, 'dashboard.html')
 
 @login_required
 def redirect_after_login(request):
     """
-    Traffic controller: Now sends EVERYONE (Admins and Staff) 
-    directly to the custom dashboard instead of the Django backend.
+    The RBAC Traffic Controller: 
+    Checks the user's department and redirects them to their specific home page.
     """
+    try:
+        # Get the profile for the logged-in user
+        profile = request.user.userprofile
+        
+        # 1. Double check if they are approved (Safety Gate)
+        if not profile.is_approved:
+            messages.warning(request, "Your account is not yet approved by an administrator.")
+            return render(request, 'registration_pending.html', {'dept': profile.department})
+
+        # 2. Redirect based on the department stored in their profile
+        if profile.department == 'finance':
+            return redirect('finance')  # Make sure this matches your URL name
+        elif profile.department == 'admissions':
+            return redirect('admissions')
+        elif profile.department == 'stores':
+            return redirect('stores')
+        elif profile.department == 'examinations':
+            return redirect('examinations')
+            
+    except UserProfile.DoesNotExist:
+        # If it's a superuser/admin who doesn't have a profile record
+        if request.user.is_staff:
+            return redirect('admin_management')
+        
+    # If no profile and not staff, send to a general dashboard
     return redirect('dashboard')
-
-def register_view(request):
-    """
-    Registers users as 'Inactive' (is_active=False).
-    Shows a success message directing them to wait for approval.
-    """
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.is_active = False  
-            user.save()
-            AuditTrail.objects.create(user=user, action="Registered (Pending Approval)")
-            messages.success(request, "Registration successful! Please wait for Admin approval before logging in.")
-            return redirect('login')
-    else:
-        form = UserCreationForm()
-    return render(request, 'register.html', {'form': form})
-
 # --- ADMISSIONS DEPT ---
-
+@department_required('admissions')
 @login_required
 def admissions_view(request):
     students_list = Student.objects.all()
@@ -89,7 +143,7 @@ def admissions_view(request):
     return render(request, 'admissions.html', context)
 
 # --- FINANCE DEPT ---
-
+@department_required('finance')
 @login_required
 def finance_view(request):
     if request.method == 'POST' and 'add_structure' in request.POST:
@@ -172,9 +226,7 @@ def delete_student(request, pk):
     return redirect('admissions')
 
 # --- EXAMINATIONS ---
-
-# --- EXAMINATIONS ---
-
+@department_required('examinations')
 @login_required
 def examinations_view(request):
     query = request.GET.get('q')
@@ -186,38 +238,23 @@ def examinations_view(request):
         exams = Examination.objects.all().select_related('student').order_by('student__course', 'year_of_study', 'semester', 'student__name')
 
     if request.method == 'POST':
-        # 1. Handle Deletion Logging
         if 'delete_id' in request.POST:
             exam_to_delete = get_object_or_404(Examination, id=request.POST.get('delete_id'))
             student_name = exam_to_delete.student.name
             subject = exam_to_delete.subject_name
-            
             exam_to_delete.delete()
-            
-            # Create Audit Log for deletion
-            AuditTrail.objects.create(
-                user=request.user, 
-                action=f"Deleted marks for {student_name} (Subject: {subject})"
-            )
-            
+            AuditTrail.objects.create(user=request.user, action=f"Deleted marks for {student_name} (Subject: {subject})")
             messages.success(request, "Record deleted successfully.")
             return redirect('examinations')
 
-        # 2. Handle Saving/Editing Logging
         instance_id = request.POST.get('instance_id')
         instance = Examination.objects.filter(id=instance_id).first() if instance_id else None
         form = ExaminationForm(request.POST, instance=instance)
         
         if form.is_valid():
             exam = form.save()
-            
-            # Create Audit Log for adding/editing
             action_type = "Updated" if instance_id else "Recorded"
-            AuditTrail.objects.create(
-                user=request.user, 
-                action=f"{action_type} marks for {exam.student.name} (Subject: {exam.subject_name})"
-            )
-            
+            AuditTrail.objects.create(user=request.user, action=f"{action_type} marks for {exam.student.name} (Subject: {exam.subject_name})")
             messages.success(request, "Marks saved successfully.")
             return redirect('examinations')
     else:
@@ -226,18 +263,17 @@ def examinations_view(request):
         form = ExaminationForm(instance=instance)
 
     return render(request, 'examinations.html', {'form': form, 'exams': exams, 'student': student, 'query': query})
+
 # --- STORES ---
+@department_required('stores')
 @login_required
 def stores_view(request):
     consumables = Consumable.objects.all()
     equipment = PermanentEquipment.objects.all()
-    
-    # Initialize forms
     c_form = ConsumableForm()
     e_form = EquipmentForm()
 
     if request.method == 'POST':
-        # Handle Consumable Submission
         if 'add_consumable' in request.POST:
             c_form = ConsumableForm(request.POST)
             if c_form.is_valid():
@@ -248,7 +284,6 @@ def stores_view(request):
                 messages.success(request, "Consumable added successfully")
                 return redirect('stores')
 
-        # Handle Equipment Submission
         elif 'add_equipment' in request.POST:
             e_form = EquipmentForm(request.POST)
             if e_form.is_valid():
@@ -259,15 +294,8 @@ def stores_view(request):
                 messages.success(request, "Equipment added successfully")
                 return redirect('stores')
 
-    context = {
-        'consumables': consumables,
-        'equipment': equipment,
-        'c_form': c_form,
-        'e_form': e_form,
-    }
+    context = {'consumables': consumables, 'equipment': equipment, 'c_form': c_form, 'e_form': e_form}
     return render(request, 'stores.html', context)
-
-# --- CRUD FUNCTIONALITIES ---
 
 @login_required
 def delete_store_item(request, item_type, pk):
@@ -281,6 +309,7 @@ def delete_store_item(request, item_type, pk):
     AuditTrail.objects.create(user=request.user, action=f"Deleted {item_type}: {item_name}")
     messages.warning(request, f"{item_name} removed from inventory.")
     return redirect('stores')
+
 # --- USER MANAGEMENT ---
 
 @user_passes_test(lambda u: u.is_staff)
@@ -299,6 +328,13 @@ def approve_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.is_active = True
     user.save()
+    
+    # Also approve the associated UserProfile
+    profile = getattr(user, 'userprofile', None)
+    if profile:
+        profile.is_approved = True
+        profile.save()
+
     AuditTrail.objects.create(user=request.user, action=f"Approved user: {user.username}")
     messages.success(request, f"{user.username} is now active.")
     return redirect('admin_management')

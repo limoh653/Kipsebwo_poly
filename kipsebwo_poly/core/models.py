@@ -3,6 +3,22 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+#tracks the user's requested department, their approval status, and define the department choices.
+class UserProfile(models.Model):
+    DEPARTMENT_CHOICES = [
+        ('finance', 'Finance'),
+        ('admission', 'Admission'),
+        ('exams', 'Examinations'),
+        ('store', 'Store'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
+    is_approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.department} ({'Approved' if self.is_approved else 'Pending'})"
+
 # 1. Audit Trail
 class AuditTrail(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

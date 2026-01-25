@@ -1,6 +1,41 @@
 from django import forms
 from .models import Student, Examination, FeeStructure
 from .models import Consumable, PermanentEquipment
+from django.contrib.auth.models import User
+from .models import UserProfile
+#registration form that includes the department selection and the logic to reject the 3rd user.
+class RegistrationForm(forms.ModelForm):
+    # 1. Defining the 4 specific departments
+    DEPARTMENT_CHOICES = [
+        ('finance', 'Finance'),
+        ('admissions', 'Admissions'),
+        ('stores', 'Stores'),
+        ('examinations', 'Examinations'),
+    ]
+
+    # 2. This creates the dropdown field
+    department = forms.ChoiceField(
+        choices=DEPARTMENT_CHOICES,
+        label="Department to Access",
+        required=True
+    )
+    
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        # 3. Added 'department' here so it renders in the HTML loop
+        fields = ['username', 'email', 'password', 'department']
+
+    def clean_department(self):
+        dept = self.cleaned_data.get('department')
+        # Logic: Check if 2 users already exist for this department
+        existing_count = UserProfile.objects.filter(department=dept).count()
+        if existing_count >= 2:
+            raise forms.ValidationError(
+                f"The {dept} department already has the maximum limit of 2 users."
+            )
+        return dept
 
 class StudentForm(forms.ModelForm):
     class Meta:
