@@ -19,9 +19,8 @@ urlpatterns = [
 
     # --- Admissions Department ---
     path('admissions/', views.admissions_view, name='admissions'),
-    path('admissions/student/<int:pk>/', views.student_detail, name='student_detail'),
-    path('admissions/delete/<int:pk>/', views.delete_student, name='delete_student'),
-
+    path('student/<int:pk>/', views.student_profile_view, name='student_profile'),
+    path('student/<int:pk>/edit/', views.edit_student_view, name='edit_student'),
     # --- Finance Department ---
     path('finance/', views.finance_view, name='finance'),
     path('finance/pay/<int:student_id>/', views.process_payment, name='process_payment'),

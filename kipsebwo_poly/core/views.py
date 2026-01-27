@@ -18,10 +18,20 @@ def department_required(dept_name):
     def decorator(view_func):
         @login_required
         def _wrapped_view(request, *args, **kwargs):
+            # 1. THE SUPERUSER OVERRIDE
+            # If the user is a superuser, they bypass all department checks.
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+
+            # 2. NORMAL USER CHECK
             profile = getattr(request.user, 'userprofile', None)
+            
+            # Check if they have a profile, match the dept, and are approved
             if profile and profile.department == dept_name and profile.is_approved:
                 return view_func(request, *args, **kwargs)
-            raise PermissionDenied # Redirects to a 403 error page
+            
+            # 3. ACCESS DENIED
+            raise PermissionDenied 
         return _wrapped_view
     return decorator
 
@@ -115,6 +125,9 @@ def redirect_after_login(request):
 @department_required('admissions')
 @login_required
 def admissions_view(request):
+    #Title Logic
+    page_title = 'ST AUGUSTINE KIPSEBWO VOCATIONAL TRAINING CENTRE'
+    
     students_list = Student.objects.all()
     search_query = request.GET.get('search', '')
     gender_filter = request.GET.get('gender', '')
@@ -131,17 +144,45 @@ def admissions_view(request):
     grouped_students = {course: students_list.filter(course=course) for course in courses}
 
     if request.method == 'POST':
-        form = StudentForm(request.POST)
+        # request.FILES to handle the passport photo upload
+        form = StudentForm(request.POST, request.FILES)
         if form.is_valid():
             student = form.save()
             AuditTrail.objects.create(user=request.user, action=f"Admitted student: {student.name}")
+            messages.success(request, f"Student {student.name} successfully admitted.")
             return redirect('admissions')
     else:
         form = StudentForm()
     
-    context = {'grouped_students': grouped_students, 'form': form, 'search_query': search_query}
+    context = {
+        'grouped_students': grouped_students, 
+        'form': form, 
+        'search_query': search_query,
+        'page_title': page_title
+    }
     return render(request, 'admissions.html', context)
 
+@login_required
+def student_profile_view(request, pk):
+    """View showing all details: Boarding status, photos, and current status."""
+    student = get_object_or_404(Student, pk=pk)
+    return render(request, 'student_profile.html', {'student': student})
+
+@department_required('admissions')
+@login_required
+def edit_student_view(request, pk):
+    """Functionality to edit student details including their status."""
+    student = get_object_or_404(Student, pk=pk)
+    if request.method == 'POST':
+        form = StudentForm(request.POST, request.FILES, instance=student)
+        if form.is_valid():
+            form.save()
+            AuditTrail.objects.create(user=request.user, action=f"Updated student: {student.name}")
+            messages.success(request, "Student profile updated.")
+            return redirect('student_profile', pk=student.pk)
+    else:
+        form = StudentForm(instance=student)
+    return render(request, 'edit_student.html', {'form': form, 'student': student})
 # --- FINANCE DEPT ---
 @department_required('finance')
 @login_required

@@ -26,13 +26,24 @@ class AuditTrail(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
 # 2. Student Model
+
 class Student(models.Model):
     SEX_CHOICES = [('Male', 'Male'), ('Female', 'Female')]
-    
+    # Added New Choices
+    RESIDENCE_CHOICES = [('Boarder', 'Boarder'), ('Day Scholar', 'Day Scholar')]
+    STATUS_CHOICES = [
+        ('Active', 'Active'),
+        ('Deferred', 'Deferred'),
+        ('Dropout', 'Dropout'),
+        ('Completed', 'Completed')
+    ]
+
     name = models.CharField(max_length=100)
     admission_number = models.CharField(max_length=50, unique=True)
-    # Using the name exactly as the system expects to avoid renaming prompts
-    id_birth_number = models.CharField(max_length=50) 
+    id_number = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    birth_certificate_number = models.CharField(max_length=50, blank=True, null=True)
+    #id_birth_number = models.CharField(max_length=50) # Kept for backward compatibility
     phone_number = models.CharField(max_length=20)
     sex = models.CharField(max_length=10, choices=SEX_CHOICES)
     course = models.CharField(max_length=100)
@@ -40,11 +51,12 @@ class Student(models.Model):
     parent_contacts = models.CharField(max_length=100)
     religion = models.CharField(max_length=50)
     year_enrolled = models.IntegerField(default=2026)
+    residence = models.CharField(max_length=20, choices=RESIDENCE_CHOICES, default='Day Scholar')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
+    passport_photo = models.ImageField(upload_to='student_photos/', blank=True, null=True)
 
     def __str__(self):
         return f"{self.admission_number} - {self.name}"
-
-from django.db import models
 
 # ... (Keep Student, FeeStructure, etc. as they are)
 
