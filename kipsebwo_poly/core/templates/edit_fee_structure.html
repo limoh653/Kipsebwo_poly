@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #27ae60;
+        --secondary: #2980b9;
+        --warning: #f39c12;
+        --light-bg: #f4f7f6;
+        --text-dark: #2c3e50;
+    }
+
+    body { background-color: var(--light-bg); color: var(--text-dark); }
+
+    .system-header {
+        background: linear-gradient(135deg, #d35400 0%, #f39c12 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        max-width: 800px; /* Increased width to accommodate the grid */
+        margin: 20px auto;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-top: 5px solid var(--warning);
+    }
+
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+    
+    .term-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
+
+    input[readonly] {
+        background-color: #f8f9fa;
+        color: #7f8c8d;
+        border: 1px solid #eee;
+        cursor: not-allowed;
+    }
+
+    .votehead-label {
+        font-size: 0.9rem;
+        color: var(--secondary);
+        text-transform: uppercase;
+        margin-top: 15px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 2px;
+    }
+
+    .btn-container { display: flex; gap: 10px; margin-top: 30px; }
+    .btn-save { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 2; }
+    .btn-back { background: #95a5a6; color: white; text-decoration: none; padding: 12px; border-radius: 6px; text-align: center; flex: 1; }
+</style>
+
+<div class="container">
+    <div class="system-header">
+        <h1>Update Fee Structure</h1>
+        <p>Adjusting rates for: <strong>{{ structure.course }}</strong></p>
+    </div>
+
+    <div class="card">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="term-grid">
+                <div class="form-group">
+                    <label>Course (Locked)</label>
+                    <input type="text" value="{{ structure.course }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Scholar Type (Locked)</label>
+                    <input type="text" value="{{ structure.scholar_type }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Financial Year</label>
+                    <input type="text" name="financial_year" value="{{ structure.financial_year }}" required>
+                </div>
+            </div>
+
+            <hr>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; font-weight: bold; color: #777;">
+                <div>Term 1 (Ksh)</div>
+                <div>Term 2 (Ksh)</div>
+                <div>Term 3 (Ksh)</div>
+            </div>
+
+            <div class="votehead-label">L.T.T (Training)</div>
+            <div class="term-grid">
+                <input type="number" name="ltt_t1" value="{{ structure.ltt_t1|default:0 }}">
+                <input type="number" name="ltt_t2" value="{{ structure.ltt_t2|default:0 }}">
+                <input type="number" name="ltt_t3" value="{{ structure.ltt_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">Boarding Fee</div>
+            <div class="term-grid">
+                <input type="number" name="boarding_t1" value="{{ structure.boarding_t1|default:0 }}">
+                <input type="number" name="boarding_t2" value="{{ structure.boarding_t2|default:0 }}">
+                <input type="number" name="boarding_t3" value="{{ structure.boarding_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">P.T.A (Lunch & Tea)</div>
+            <div class="term-grid">
+                <input type="number" name="pta_t1" value="{{ structure.pta_t1|default:0 }}">
+                <input type="number" name="pta_t2" value="{{ structure.pta_t2|default:0 }}">
+                <input type="number" name="pta_t3" value="{{ structure.pta_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">Medical</div>
+            <div class="term-grid">
+                <input type="number" name="medical_t1" value="{{ structure.medical_t1|default:0 }}">
+                <input type="number" name="medical_t2" value="{{ structure.medical_t2|default:0 }}">
+                <input type="number" name="medical_t3" value="{{ structure.medical_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">Contingencies</div>
+            <div class="term-grid">
+                <input type="number" name="contingency_t1" value="{{ structure.contingency_t1|default:0 }}">
+                <input type="number" name="contingency_t2" value="{{ structure.contingency_t2|default:0 }}">
+                <input type="number" name="contingency_t3" value="{{ structure.contingency_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">Admission Fee</div>
+            <div class="term-grid">
+                <input type="number" name="admission_t1" value="{{ structure.admission_t1|default:0 }}">
+                <input type="number" name="admission_t2" value="{{ structure.admission_t2|default:0 }}">
+                <input type="number" name="admission_t3" value="{{ structure.admission_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">Student ID Card</div>
+            <div class="term-grid">
+                <input type="number" name="id_t1" value="{{ structure.id_t1|default:0 }}">
+                <input type="number" name="id_t2" value="{{ structure.id_t2|default:0 }}">
+                <input type="number" name="id_t3" value="{{ structure.id_t3|default:0 }}">
+            </div>
+
+            <div class="votehead-label">Caution Money</div>
+            <div class="term-grid">
+                <input type="number" name="caution_t1" value="{{ structure.caution_t1|default:0 }}">
+                <input type="number" name="caution_t2" value="{{ structure.caution_t2|default:0 }}">
+                <input type="number" name="caution_t3" value="{{ structure.caution_t3|default:0 }}">
+            </div>
+
+            <div class="btn-container">
+                <a href="{% url 'finance_dashboard' %}" class="btn-back">Cancel</a>
+                <button type="submit" class="btn-save">Update Structure</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

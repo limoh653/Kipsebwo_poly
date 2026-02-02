@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    body { font-family: 'Times New Roman', Times, serif; background-color: #f0f2f5; }
+    
+    .finance-terminal {
+        background: #ffffff;
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border-top: 6px solid #27ae60;
+    }
+
+    .terminal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    .page-container { 
+        background: white; 
+        padding: 40px 60px; 
+        max-width: 1000px; 
+        margin: 30px auto; 
+        color: black; 
+        border: 1px solid #333;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .header { text-align: center; line-height: 1.3; text-transform: uppercase; margin-bottom: 20px; }
+    .header h3 { margin: 0; font-size: 18px; text-decoration: underline; }
+    .header h2 { margin: 5px 0; font-size: 22px; }
+    .header p { margin: 2px 0; font-size: 14px; font-weight: bold; }
+    
+    .header-input {
+        border: none; border-bottom: 1px dotted #000;
+        font-family: 'Times New Roman', serif; font-size: 16px;
+        font-weight: bold; text-align: center; background: transparent;
+        text-transform: uppercase;
+    }
+
+    .type-display {
+        border-bottom: 1px dotted #000; font-family: 'Times New Roman', serif;
+        font-size: 16px; font-weight: bold; text-transform: uppercase;
+        padding: 2px 10px; display: inline-block; min-width: 120px;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
+    table, th, td { border: 1px solid black; }
+    th { background-color: #f2f2f2; padding: 8px; font-size: 12px; text-transform: uppercase; }
+    td { padding: 0; height: 35px; font-size: 14px; }
+    
+    .editable-cell {
+        width: 100%; height: 100%; border: none; padding: 5px; 
+        font-family: 'Times New Roman', serif; font-size: 15px; 
+        box-sizing: border-box; background: transparent; text-align: center;
+    }
+    .editable-cell:focus, .header-input:focus { background-color: #fffde7; outline: none; }
+
+    .row-total { background: #f9f9f9; font-weight: bold; text-align: center; }
+    .total-row { background: #eee; font-weight: bold; }
+    .grand-total-cell { background: #2c3e50; color: white !important; text-align: center; }
+
+    .btn { padding: 12px 25px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; }
+    .btn-save { background: #27ae60; color: white; }
+    .btn-print { background: #7f8c8d; color: white; }
+
+    @media print { 
+        .no-print { display: none !important; }
+        body { background: white; padding: 0; }
+        .page-container { border: none; margin: 0; width: 100%; box-shadow: none; padding: 20px; }
+        .grand-total-cell { color: black !important; background: #eee !important; }
+    }
+</style>
+
+<div class="container">
+    {% if messages %}
+        <div class="no-print" style="max-width: 1000px; margin: 10px auto;">
+            {% for message in messages %}
+                <div style="padding: 15px; background: #f8d7da; color: #721c24; border-radius: 5px; margin-bottom: 10px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="finance-terminal no-print">
+        <div class="terminal-grid">
+            <div class="form-section">
+                <h4 style="margin-top:0;">🔍 Student Fee Profile</h4>
+                <p>Admission No: <strong>{{ instance.student.admission_number|default:"N/A" }}</strong></p>
+                <p>Selected Mode: <strong id="debug-mode">{{ instance.scholar_type|default:"Boarder" }}</strong></p>
+            </div>
+            <div class="form-section" style="text-align: right; align-self: center;">
+                <p style="color: #2c3e50; font-weight: bold;">System Status: <span id="mode-indicator">Detecting...</span></p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="">
+        {% csrf_token %}
+        
+        <input type="hidden" name="scholar_type" id="scholarTypeHidden" value="{{ instance.scholar_type|default:'Boarder' }}">
+        <input type="hidden" name="student" value="{{ instance.student.id }}">
+
+        <div class="page-container">
+            <div class="header">
+                <h3>MINISTRY OF EDUCATION</h3>
+                <h2>ST. AUGUSTINE KIPSEBWO VOCATIONAL TRAINING CENTRE</h2>
+                <p>P.O BOX 45-30304 KAPCHENO | TEL: 0720919005</p>
+                <hr style="border: 1px solid black; margin: 10px 0;">
+                <div style="margin: 10px 0;">
+                    <span style="font-weight: bold;">FEE STRUCTURE FOR FY: </span>
+                    <input type="text" name="financial_year" class="header-input" value="{{ instance.financial_year|default:'' }}" style="width: 120px;" required>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-weight: bold;">
+                <div>NAME: <input type="text" readonly class="header-input" value="{{ instance.student.name|default:'' }}" style="width: 250px; text-align: left;"></div>
+                <div style="text-align: right;">ADM NO: <input type="text" readonly class="header-input" value="{{ instance.student.admission_number|default:'' }}" style="width: 150px; text-align: left;"></div>
+                
+                <div>COURSE: <input type="text" name="course" class="header-input" value="{{ instance.course|default:'' }}" placeholder="ENTER COURSE NAME" style="width: 240px; text-align: left;" required></div>
+                <div style="text-align: right;"><span class="type-display">{{ instance.scholar_type|default:"Boarder" }}</span></div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">VOTE HEAD</th>
+                        <th style="width: 17%;">TERM 1 (Ksh)</th>
+                        <th style="width: 17%;">TERM 2 (Ksh)</th>
+                        <th style="width: 17%;">TERM 3 (Ksh)</th>
+                        <th style="width: 19%;">TOTAL (Ksh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">L.T.T (Training)</td>
+                        <td><input type="number" name="ltt_t1" class="editable-cell" value="{{ instance.ltt_t1|default:0 }}"></td>
+                        <td><input type="number" name="ltt_t2" class="editable-cell" value="{{ instance.ltt_t2|default:0 }}"></td>
+                        <td><input type="number" name="ltt_t3" class="editable-cell" value="{{ instance.ltt_t3|default:0 }}"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row" id="boarding_row">
+                        <td style="padding-left: 10px; font-weight: bold; color: #1e8449;">BOARDING FEE</td>
+                        <td><input type="number" name="boarding_fee_t1" class="editable-cell" value="{{ instance.boarding_fee_t1|default:0 }}"></td>
+                        <td><input type="number" name="boarding_fee_t2" class="editable-cell" value="{{ instance.boarding_fee_t2|default:0 }}"></td>
+                        <td><input type="number" name="boarding_fee_t3" class="editable-cell" value="{{ instance.boarding_fee_t3|default:0 }}"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">P.T.A (Lunch & Tea)</td>
+                        <td><input type="number" name="pta_t1" class="editable-cell" value="{{ instance.pta_t1|default:0 }}"></td>
+                        <td><input type="number" name="pta_t2" class="editable-cell" value="{{ instance.pta_t2|default:0 }}"></td>
+                        <td><input type="number" name="pta_t3" class="editable-cell" value="{{ instance.pta_t3|default:0 }}"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">MEDICAL</td>
+                        <td><input type="number" name="medical_t1" class="editable-cell" value="{{ instance.medical_t1|default:0 }}"></td>
+                        <td><input type="number" name="medical_t2" class="editable-cell" value="{{ instance.medical_t2|default:0 }}"></td>
+                        <td><input type="number" name="medical_t3" class="editable-cell" value="{{ instance.medical_t3|default:0 }}"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">CONTINGENCIES</td>
+                        <td><input type="number" name="contingencies_t1" class="editable-cell" value="{{ instance.contingencies_t1|default:0 }}"></td>
+                        <td><input type="number" name="contingencies_t2" class="editable-cell" value="{{ instance.contingencies_t2|default:0 }}"></td>
+                        <td><input type="number" name="contingencies_t3" class="editable-cell" value="{{ instance.contingencies_t3|default:0 }}"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">ADMISSION FEE</td>
+                        <td><input type="number" name="adm_fee" class="editable-cell" value="{{ instance.adm_fee|default:0 }}"></td>
+                        <td><input type="number" readonly class="editable-cell" value="0" style="background: #f9f9f9;"></td>
+                        <td><input type="number" readonly class="editable-cell" value="0" style="background: #f9f9f9;"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">STUDENT ID CARD</td>
+                        <td><input type="number" name="student_id" class="editable-cell" value="{{ instance.student_id|default:0 }}"></td>
+                        <td><input type="number" readonly class="editable-cell" value="0" style="background: #f9f9f9;"></td>
+                        <td><input type="number" readonly class="editable-cell" value="0" style="background: #f9f9f9;"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="fee-row">
+                        <td style="padding-left: 10px;">CAUTION MONEY</td>
+                        <td><input type="number" name="caution_money" class="editable-cell" value="{{ instance.caution_money|default:0 }}"></td>
+                        <td><input type="number" readonly class="editable-cell" value="0" style="background: #f9f9f9;"></td>
+                        <td><input type="number" readonly class="editable-cell" value="0" style="background: #f9f9f9;"></td>
+                        <td class="row-total">0</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td style="text-align: right; padding-right: 15px;">TOTAL PER TERM (KSH)</td>
+                        <td id="total_t1">0</td>
+                        <td id="total_t2">0</td>
+                        <td id="total_t3">0</td>
+                        <td id="grand_total" class="grand-total-cell">0</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 60px; display: flex; justify-content: space-between;">
+                <div style="text-align: center; width: 220px;">
+                    <hr style="border: 0.5px solid black; margin-bottom: 5px;">
+                    <p style="margin:0; font-size: 14px;">Bursar / Principal</p>
+                </div>
+                <div style="text-align: center; width: 200px;">
+                    <p style="border: 1px solid black; height: 80px; line-height: 80px; margin:0; font-size: 12px; color: #ccc;">OFFICIAL STAMP</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="no-print" style="text-align: center; margin-bottom: 50px;">
+            <button type="submit" class="btn btn-save">💾 Save & Update Balance</button>
+            <button type="button" onclick="window.print()" class="btn btn-print">🖨️ Print Structure</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function calculateTotals() {
+        const rawType = document.getElementById('scholarTypeHidden').value;
+        const isDayScholar = rawType.toLowerCase().includes("day");
+        
+        const boardingRow = document.getElementById('boarding_row');
+        const indicator = document.getElementById('mode-indicator');
+        
+        if (isDayScholar) {
+            boardingRow.style.display = 'none';
+            indicator.innerText = "Day Scholar Mode Active";
+            indicator.style.color = "#e67e22";
+            document.getElementsByName('boarding_fee_t1')[0].value = 0;
+            document.getElementsByName('boarding_fee_t2')[0].value = 0;
+            document.getElementsByName('boarding_fee_t3')[0].value = 0;
+        } else {
+            boardingRow.style.display = 'table-row';
+            indicator.innerText = "Boarding Mode Active";
+            indicator.style.color = "#27ae60";
+        }
+
+        const rows = document.querySelectorAll('.fee-row');
+        let grandTotalValue = 0;
+        
+        rows.forEach(row => {
+            let rowSum = 0;
+            const inputs = row.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                rowSum += parseFloat(input.value) || 0;
+            });
+            row.querySelector('.row-total').innerText = rowSum.toLocaleString();
+            grandTotalValue += rowSum;
+        });
+
+        const columns = {
+            't1': ['ltt_t1', 'boarding_fee_t1', 'pta_t1', 'medical_t1', 'contingencies_t1', 'adm_fee', 'student_id', 'caution_money'],
+            't2': ['ltt_t2', 'boarding_fee_t2', 'pta_t2', 'medical_t2', 'contingencies_t2'],
+            't3': ['ltt_t3', 'boarding_fee_t3', 'pta_t3', 'medical_t3', 'contingencies_t3']
+        };
+
+        for (let t in columns) {
+            let colSum = 0;
+            columns[t].forEach(name => {
+                let input = document.getElementsByName(name)[0];
+                if (input && input.value) colSum += parseFloat(input.value) || 0;
+            });
+            document.getElementById(`total_${t}`).innerText = colSum.toLocaleString();
+        }
+
+        document.getElementById('grand_total').innerText = grandTotalValue.toLocaleString();
+    }
+
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', calculateTotals);
+    });
+
+    window.onload = calculateTotals;
+</script>
+{% endblock %}

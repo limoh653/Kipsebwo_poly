@@ -1,138 +1,324 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>Finance Department Dashboard</h2>
-        <a href="{% url 'payment_history' %}" class="btn" style="background: #8e44ad; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Full Payment History</a>
-    </div>
+<style>
+    /* Modern Dashboard Styling */
+    :root {
+        --primary: #27ae60;
+        --secondary: #2980b9;
+        --accent: #8e44ad;
+        --warning: #f39c12;
+        --danger: #e74c3c;
+        --light-bg: #f4f7f6;
+        --text-dark: #2c3e50;
+    }
 
-    <div class="card" style="background: white; padding: 20px; margin-bottom: 30px; border-radius: 8px; border-top: 5px solid #27ae60; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h3>Set Course Fee Structure</h3>
-        <form method="POST">
-            {% csrf_token %}
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                <input type="hidden" name="add_structure" value="1">
-                {% for field in form %}
-                    <div>
-                        <label style="font-size: 13px; font-weight: bold;">{{ field.label }}</label>
-                        {{ field }}
-                    </div>
-                {% endfor %}
+    body { background-color: var(--light-bg); color: var(--text-dark); }
+
+    .system-header {
+        background: linear-gradient(135deg, #1e8449 0%, #27ae60 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .system-header h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+    .system-header p { margin: 5px 0 0; opacity: 0.9; font-weight: 300; }
+
+    .card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-top: 5px solid #ddd;
+        transition: transform 0.2s;
+    }
+
+    /* Table Styling */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { 
+        text-align: left; 
+        padding: 12px; 
+        font-size: 0.85rem; 
+        text-transform: uppercase; 
+        color: #7f8c8d;
+        border-bottom: 2px solid #eee;
+    }
+    td { padding: 12px; border-bottom: 1px solid #f9f9f9; vertical-align: middle; }
+    tr:hover td { background-color: #fcfdfd; }
+
+    /* Action Elements */
+    .btn-action {
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: none;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+    .action-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+    .input-row { display: flex; gap: 10px; margin-bottom: 15px; }
+    input, select {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+    input:focus { border-color: var(--secondary); }
+
+    /* Badges */
+    .badge-debt { background: #fdf2f2; color: var(--danger); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+    .badge-clear { background: #f0fff4; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+
+    .text-bold-green { color: var(--primary); font-weight: bold; font-size: 1rem; }
+
+    /* Dropdown */
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background: white;
+        min-width: 180px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        z-index: 10;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .dropdown-content a { color: #333; padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid #eee; }
+    .dropdown-content a:hover { background-color: #f1f1f1; }
+    .dropdown:hover .dropdown-content { display: block; }
+
+    .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid transparent; }
+    .alert-success { background: #eafaf1; color: #1e8449; border-left-color: #2ecc71; }
+    .alert-error { background: #fdf2f2; color: #922b21; border-left-color: #e74c3c; }
+
+    @media (max-width: 768px) { .action-bar { grid-template-columns: 1fr; } }
+</style>
+
+<div class="container" style="padding: 20px; max-width: 1200px; margin: auto;">
+    
+    <div class="system-header">
+        <h1>ST AUGUSTINE KIPSEBWO VTC</h1>
+        <p>Finance Management System & Student Billing</p>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                {% if message.tags == 'error' %}⚠️{% else %}✅{% endif %} {{ message }}
             </div>
-            <button type="submit" class="btn" style="margin-top: 15px; background: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
-                Save New Structure
-            </button>
-        </form>
-        
-        <h4 style="margin-top: 25px;">Current Fee Structures</h4>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <tr style="background: #f8f9fa;">
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Course</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Sem 1 (Ksh)</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Sem 2 (Ksh)</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Sem 3 (Ksh)</th>
-            </tr>
-            {% for f in structures %}
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{{ f.course }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ f.semester_1 }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ f.semester_2 }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ f.semester_3 }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+        {% endfor %}
+    {% endif %}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h3 style="color: #34495e; margin: 0; font-weight: 700;">Operational Dashboard</h3>
+        <div style="display: flex; gap: 10px;">
+            <div class="dropdown">
+                <button class="btn-action" style="background: var(--primary);">
+                    <i class="fas fa-plus"></i> + Create Fee Structure
+                </button>
+                <div class="dropdown-content">
+                    <a href="{% url 'add_fee_structure' %}?type=Boarder">🏠 For Boarders</a>
+                    <a href="{% url 'add_fee_structure' %}?type=Day Scholar">☀️ For Day Scholars</a>
+                </div>
+            </div>
+            <a href="{% url 'payment_history' %}" class="btn-action" style="background: var(--accent);">
+                View Full History
+            </a>
+        </div>
     </div>
 
-    <div class="card" style="background: white; padding: 20px; margin-bottom: 30px; border-radius: 8px; border-top: 5px solid #f39c12; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h3 style="color: #e67e22;">Recent Transactions</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <thead style="background: #fdf2e9;">
+    <div class="card" style="border-top-color: var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; color: var(--text-dark);">Active Fee Configurations</h4>
+            <span style="font-size: 0.8rem; color: #7f8c8d; background: #eee; padding: 2px 8px; border-radius: 4px;">Annual Rates</span>
+        </div>
+        <table>
+            <thead>
                 <tr>
-                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Date</th>
-                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Student</th>
-                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: left;">Sem</th>
-                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: right;">Amount (Ksh)</th>
-                    <th style="padding: 10px; border-bottom: 2px solid #ddd; text-align: center;">Action</th>
+                    <th>Course</th>
+                    <th>Category</th>
+                    <th>Term 1</th>
+                    <th>Term 2</th>
+                    <th>Term 3</th>
+                    <th>Annual Total</th>
+                    <th>Year</th>
+                    <th style="text-align: center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for payment in recent_payments %}
+                {% for structure in fee_structures %}
                 <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ payment.date|date:"d M, Y" }}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ payment.student.name }}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">{{ payment.semester }}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">{{ payment.amount }}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                        <a href="{% url 'print_receipt' payment.id %}" target="_blank" style="color: #27ae60; text-decoration: none; font-weight: bold;">
-                            🖨️ Print Receipt
-                        </a>
+                    <td style="font-weight: 600; color: var(--secondary);">{{ structure.course }}</td>
+                    <td>{{ structure.scholar_type }}</td>
+                    <td>Ksh {{ structure.term1_total|floatformat:0 }}</td>
+                    <td>Ksh {{ structure.term2_total|floatformat:0 }}</td>
+                    <td>Ksh {{ structure.term3_total|floatformat:0 }}</td>
+                    <td class="text-bold-green">
+                        Ksh {{ structure.term1_total|add:structure.term2_total|add:structure.term3_total|floatformat:0 }}
+                    </td>
+                    <td><small class="badge-clear" style="font-weight: normal; color: #666;">{{ structure.financial_year }}</small></td>
+                    <td style="text-align: center;">
+                        <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+                            <a href="{% url 'edit_fee_structure' structure.id %}" style="color: var(--warning); text-decoration: none; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="{% url 'print_fee_structure' structure.id %}" target="_blank" style="color: var(--secondary); text-decoration: none; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-print"></i> Print
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" style="padding: 20px; text-align: center; color: #95a5a6;">No recent payments recorded.</td>
+                    <td colspan="8" style="text-align: center; color: #95a5a6; padding: 30px;">No fee structures created yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <hr>
+    <div class="action-bar">
+        <div class="action-box" style="border-top: 5px solid var(--secondary);">
+            <h4 style="margin-top: 0; color: var(--secondary);">🔍 Find Student Statement</h4>
+            <form method="GET" action="">
+                <div class="input-row">
+                    <input type="text" name="search_adm" placeholder="Enter Admission Number..." style="flex: 1;" value="{{ request.GET.search_adm }}">
+                    <button type="submit" class="btn-action" style="background: var(--secondary);">Search</button>
+                </div>
+            </form>
+        </div>
 
-    <div style="margin: 20px 0;">
-        <h3>Student Fee Balances</h3>
-        <form method="GET" style="display: flex; gap: 10px;">
-            <input type="text" name="search" placeholder="Search student name or Adm No..." value="{{ search_query }}" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-            <button type="submit" class="btn" style="background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Search Balances</button>
-        </form>
+        <div class="action-box" style="border-top: 5px solid var(--accent);">
+            <h4 style="margin-top: 0; color: var(--accent);">💳 Record New Payment</h4>
+            <form method="POST" action="{% url 'record_payment' %}">
+                {% csrf_token %}
+                <div class="input-row">
+                    <input type="text" name="adm_no" placeholder="Adm No" style="flex: 0.4;" required>
+                    <input type="number" name="amount" placeholder="Amount (Ksh)" style="flex: 0.6;" required>
+                </div>
+                <div class="input-row">
+                    <select name="mode" style="flex: 1;" required>
+                        <option value="" disabled selected>Select Payment Mode</option>
+                        <option value="M-Pesa">M-Pesa</option>
+                        <option value="Bank Deposit">Bank Deposit</option>
+                        <option value="Bank Cheque">Bank Cheque</option>
+                        <option value="Cash">Cash</option>
+                    </select>
+                    <button type="submit" class="btn-action" style="background: var(--accent); flex: 1;">Post Payment</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    {% for course, students in finance_grouped.items %}
-        {% if students %}
-            <div style="margin-bottom: 40px;">
-                <h3 style="background:#16a085; color:white; padding:12px; border-radius: 4px; margin-bottom: 0;">
-                    Course: {{ course }}
-                </h3>
-                <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                    <thead>
-                        <tr style="background: #ecf0f1;">
-                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Student Name</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Sem 1 Bal</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Sem 2 Bal</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Sem 3 Bal</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Total Due</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for s in students %}
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd;">
-                                <strong>{{ s.name }}</strong><br>
-                                <small style="color: #7f8c8d;">{{ s.admission_number }}</small>
-                            </td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ s.feebalance.sem1_bal }}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ s.feebalance.sem2_bal }}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ s.feebalance.sem3_bal }}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #c0392b;">
-                                {{ s.feebalance.total_due }}
-                            </td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                                <a href="{% url 'process_payment' s.id %}" class="btn" style="background: #2980b9; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">
-                                    Record Payment
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-    {% empty %}
-        <div style="padding: 40px; text-align: center; background: white; border: 1px dashed #ccc;">
-            <p>No student financial records found. Ensure you have created Fee Structures and admitted students.</p>
+    {% if request.GET.search_adm and search_result %}
+        <div class="card" style="border-top-color: var(--warning); background: #fffdf9;">
+            <h3 style="margin: 0 0 15px 0; color: var(--warning);">Statement: {{ search_result.name }} ({{ search_result.admission_number }})</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Term 1 Bal</th>
+                        <th>Term 2 Bal</th>
+                        <th>Term 3 Bal</th>
+                        <th>Total Billed</th>
+                        <th>Total Paid</th>
+                        <th>Remaining Debt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ksh {{ search_result.fee_balance.sem1_bal }}</td>
+                        <td>Ksh {{ search_result.fee_balance.sem2_bal }}</td>
+                        <td>Ksh {{ search_result.fee_balance.sem3_bal }}</td>
+                        <td>Ksh {{ search_result.fee_balance.total_invoiced }}</td>
+                        <td style="color: var(--primary); font-weight: bold;">Ksh {{ search_result.fee_balance.total_paid }}</td>
+                        <td>
+                            <span class="{% if search_result.fee_balance.balance > 0 %}badge-debt{% else %}badge-clear{% endif %}">
+                                Ksh {{ search_result.fee_balance.balance }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-    {% endfor %}
+    {% endif %}
+
+    <div class="card" style="border-top-color: #16a085;">
+        <h3 style="margin: 0 0 15px 0; color: var(--text-dark);">Admitted Students & Fee Balances</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Adm No</th>
+                    <th>Student Name</th>
+                    <th>Course</th>
+                    <th>Type</th>
+                    <th>Billed</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><code style="background: #f0f0f0; padding: 2px 5px; border-radius: 4px;">{{ student.admission_number }}</code></td>
+                    <td style="font-weight: 600;">{{ student.name }}</td>
+                    <td>{{ student.course }}</td>
+                    <td><small style="color: #7f8c8d;">{{ student.residence }}</small></td>
+                    <td>Ksh {{ student.fee_balance.total_invoiced }}</td>
+                    <td style="color: var(--primary);">Ksh {{ student.fee_balance.total_paid }}</td>
+                    <td>
+                        <span class="{% if student.fee_balance.balance > 0 %}badge-debt{% else %}badge-clear{% endif %}">
+                            {{ student.fee_balance.balance }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="border-top-color: var(--secondary);">
+        <h3 style="margin: 0 0 15px 0; color: var(--text-dark);">Recent Transactions</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Amount</th>
+                    <th>Ref Number</th>
+                    <th>Date</th>
+                    <th style="text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td>{{ payment.student.name }}</td>
+                    <td style="font-weight: bold; color: var(--primary);">Ksh {{ payment.amount }}</td>
+                    <td><small style="font-family: monospace; color: #666;">{{ payment.reference_number }}</small></td>
+                    <td>{{ payment.date_paid|date:"d M Y" }}</td>
+                    <td style="text-align: center;">
+                        <a href="{% url 'generate_receipt' payment.id %}" style="color: var(--secondary); text-decoration: none; font-weight: 600; font-size: 0.85rem;">
+                            <i class="fas fa-print"></i> Reprint Receipt
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

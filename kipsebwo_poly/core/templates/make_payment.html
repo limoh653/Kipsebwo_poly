@@ -1,28 +1,37 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div style="max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Record Fee Payment</h2>
+<div class="container" style="max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h2 style="color: #2c3e50; border-bottom: 2px solid #f39c12; padding-bottom: 10px;">Record Fee Payment</h2>
     
-    <div style="margin: 20px 0; background: #f8f9fa; padding: 15px; border-radius: 5px;">
-        <p><strong>Student:</strong> {{ student.name }}</p>
-        <p><strong>Adm No:</strong> {{ student.admission_number }}</p>
+    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px; color: #856404;">
+        <strong>Student:</strong> {{ student.name }} ({{ student.admission_number }})<br>
+        <strong>Current Balance:</strong> Ksh {{ balance.balance }}
     </div>
 
     <form method="POST">
         {% csrf_token %}
-        <label>Select Semester:</label>
-        <select name="semester" required style="width: 100%; padding: 10px; margin-bottom: 20px;">
-            <option value="1">Semester 1 (Bal: {{ balance.sem1_bal }})</option>
-            <option value="2">Semester 2 (Bal: {{ balance.sem2_bal }})</option>
-            <option value="3">Semester 3 (Bal: {{ balance.sem3_bal }})</option>
-        </select>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Amount to Pay (Ksh)</label>
+            <input type="number" name="amount" step="0.01" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
 
-        <label>Amount to Pay (Ksh):</label>
-        <input type="number" name="amount" step="0.01" required style="width: 100%; padding: 10px; margin-bottom: 20px;">
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Payment Mode</label>
+            <select name="mode" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="Mpesa">Mpesa</option>
+                <option value="Bank Cheque">Bank Cheque</option>
+                <option value="Bank Deposit">Bank Deposit</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
 
-        <button type="submit" style="width: 100%; background: #27ae60; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer;">
-            Confirm Payment
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Reference Number (Mpesa Code/Cheque No)</label>
+            <input type="text" name="reference_number" required placeholder="e.g. QRT890..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+
+        <button type="submit" style="width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; cursor: pointer;">
+            Post Payment & Generate Receipt
         </button>
     </form>
 </div>

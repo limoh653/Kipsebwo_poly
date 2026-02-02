@@ -70,10 +70,12 @@
                         <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; background: white;">
                             <thead>
                                 <tr style="background: #f8f9fa; text-align: left; font-size: 0.9em;">
-                                    <th style="padding: 10px; border: 1px solid #ddd;">Admission</th>
                                     <th style="padding: 10px; border: 1px solid #ddd;">Student Name</th>
                                     <th style="padding: 10px; border: 1px solid #ddd;">Subject</th>
-                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Marks</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">CAT 1</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">CAT 2</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">End Term</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: center; background: #fef9e7;">Total (Avg CATs + End)</th>
                                     <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Grade</th>
                                     <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Actions</th>
                                 </tr>
@@ -81,15 +83,19 @@
                             <tbody>
                                 {% for e in sem.list %}
                                 <tr>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">{{ e.student.admission_number }}</td>
                                     <td style="padding: 10px; border: 1px solid #ddd;">{{ e.student.name }}</td>
                                     <td style="padding: 10px; border: 1px solid #ddd;">{{ e.subject_name }}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; text-align: center;">{{ e.marks }}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ e.cat_1 }}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ e.cat_2 }}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ e.end_term }}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; text-align: center; background: #fffde7;">
+                                        {{ e.total_marks|floatformat:1 }}
+                                    </td>
                                     <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                                        {% if e.marks >= 70 %} <span style="color: green; font-weight: bold;">A</span>
-                                        {% elif e.marks >= 60 %} <span style="color: blue; font-weight: bold;">B</span>
-                                        {% elif e.marks >= 50 %} <span style="color: orange; font-weight: bold;">C</span>
-                                        {% elif e.marks >= 40 %} <span style="color: brown; font-weight: bold;">D</span>
+                                        {% if e.total_marks >= 70 %} <span style="color: green; font-weight: bold;">A</span>
+                                        {% elif e.total_marks >= 60 %} <span style="color: blue; font-weight: bold;">B</span>
+                                        {% elif e.total_marks >= 50 %} <span style="color: orange; font-weight: bold;">C</span>
+                                        {% elif e.total_marks >= 40 %} <span style="color: brown; font-weight: bold;">D</span>
                                         {% else %} <span style="color: red; font-weight: bold;">E (Fail)</span> {% endif %}
                                     </td>
                                     <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">

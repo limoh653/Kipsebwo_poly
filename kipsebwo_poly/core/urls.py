@@ -22,18 +22,28 @@ urlpatterns = [
     path('student/<int:pk>/', views.student_profile_view, name='student_profile'),
     path('student/<int:pk>/edit/', views.edit_student_view, name='edit_student'),
     # --- Finance Department ---
+  
+
+    # ... your other urls ...
     path('finance/', views.finance_view, name='finance'),
-    path('finance/pay/<int:student_id>/', views.process_payment, name='process_payment'),
-    path('finance/receipt/<int:payment_id>/', views.print_receipt, name='print_receipt'),
+    path('finance/structure/add/', views.edit_fee_structure, name='add_fee_structure'),
+    path('finance/structure/edit/<int:structure_id>/', views.edit_fee_structure, name='edit_fee_structure'),
+    path('finance/download/<int:structure_id>/', views.download_fee_structure, name='download_fee_structure'),
     path('finance/history/', views.payment_history, name='payment_history'),
+    path('finance/history/<int:student_id>/', views.payment_history, name='payment_history_student'),
+    path('finance/fee-structure/', views.fee_structure_view, name='fee_structure'), 
+    path('finance/record-payment/', views.record_payment, name='record_payment'),
+    path('receipt/<int:payment_id>/', views.generate_receipt, name='generate_receipt'),
+    path('finance/structure/print/<int:pk>/', views.print_fee_structure, name='print_fee_structure'),
+
 
     # --- Examinations Department ---
     path('examinations/', views.examinations_view, name='examinations'),
 
     # --- Stores Department ---
     path('stores/', views.stores_view, name='stores'),
-    path('stores/delete/<str:item_type>/<int:pk>/', views.delete_store_item, name='delete_store_item'),
-
+   
+    path('stores/edit/<str:item_type>/<int:pk>/', views.edit_store_item, name='edit_store_item'),
     # --- CUSTOM ADMIN PANEL (User Management & Logs) ---
     path('admin-panel/', views.admin_management_view, name='admin_management'),
     path('admin-panel/approve/<int:user_id>/', views.approve_user, name='approve_user'),
