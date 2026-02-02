@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Registration | Kipsebwo Poly</title>
+    <title>Staff Registration | Kipsebwo VTC</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -22,11 +22,11 @@
             width: 100%; 
             max-width: 400px; 
         }
-        h2 { text-align: center; color: #1a202c; margin-bottom: 10px; }
+        h2 { text-align: center; color: #1a202c; margin-bottom: 5px; }
+        .brand { text-align: center; color: #2f855a; font-weight: bold; font-size: 1.2em; margin-bottom: 5px; }
         p.subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 25px; }
         
-        /* Styling the Django Form */
-        form p { margin-bottom: 15px; }
+        form p { margin-bottom: 15px; position: relative; }
         input { 
             width: 100%; 
             padding: 10px; 
@@ -35,7 +35,9 @@
             border-radius: 6px; 
             box-sizing: border-box; 
         }
-        ul.errorlist { color: #e53e3e; font-size: 13px; padding-left: 20px; }
+        input:focus { outline: none; border-color: #2f855a; box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.1); }
+        
+        ul.errorlist { color: #e53e3e; font-size: 13px; padding-left: 0; list-style: none; margin: 5px 0; }
         
         .btn-register { 
             width: 100%; 
@@ -54,17 +56,29 @@
         .footer-links { text-align: center; margin-top: 20px; font-size: 14px; color: #4a5568; }
         .footer-links a { color: #3182ce; text-decoration: none; font-weight: bold; }
         .footer-links a:hover { text-decoration: underline; }
+
+        /* Real-time Validation Message */
+        #password-error {
+            color: #e53e3e;
+            font-size: 12px;
+            display: none;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 
 <div class="signup-container">
+    <div class="brand">KIPSEBWO VTC</div>
     <h2>Staff Registration</h2>
-    <p class="subtitle">Create an account to manage Kipsebwo Polytechnic departments.</p>
+    <p class="subtitle">Create an account to manage department records.</p>
     
-    <form method="POST">
+    <form method="POST" id="signup-form">
         {% csrf_token %}
         {{ form.as_p }}
+        
+        <div id="password-error">Passwords do not match!</div>
+        
         <button type="submit" class="btn-register">Create Account</button>
     </form>
 
@@ -72,6 +86,30 @@
         Already have an account? <a href="{% url 'login' %}">Log In</a>
     </div>
 </div>
+
+<script>
+    const form = document.getElementById('signup-form');
+    const errorMsg = document.getElementById('password-error');
+
+    form.addEventListener('submit', function(e) {
+        // Django usually names password fields 'password' and 'confirm_password' or 'password1' and 'password2'
+        // We find them by their type to be safe
+        const passwordFields = form.querySelectorAll('input[type="password"]');
+        
+        if (passwordFields.length >= 2) {
+            const pass = passwordFields[0].value;
+            const confirm = passwordFields[1].value;
+
+            if (pass !== confirm) {
+                e.preventDefault(); // Stop form from submitting
+                errorMsg.style.display = 'block';
+                passwordFields[1].style.borderColor = '#e53e3e';
+            } else {
+                errorMsg.style.display = 'none';
+            }
+        }
+    });
+</script>
 
 </body>
 </html>

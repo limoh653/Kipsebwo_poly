@@ -14,17 +14,26 @@ class RegistrationForm(forms.ModelForm):
     department = forms.ChoiceField(
         choices=DEPARTMENT_CHOICES,
         label="Department to Access",
-        required=True
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
     
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter Password'}),
+        label="Password"
+    )
+
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'}),
+        label="Confirm Password"
+    )
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'department']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
         }
 
     def clean_department(self):
@@ -35,6 +44,17 @@ class RegistrationForm(forms.ModelForm):
                 f"The {dept} department already has the maximum limit of 2 users."
             )
         return dept
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        # Check if passwords match
+        if password and confirm_password and password != confirm_password:
+            self.add_error('confirm_password', "Passwords do not match.")
+        
+        return cleaned_data
 
 # --- STUDENT FORM ---
 class StudentForm(forms.ModelForm):
@@ -96,17 +116,14 @@ class FeeForm(forms.ModelForm):
         return cleaned_data
 
 # --- UPDATED STORES FORMS ---
-
-
 class ConsumableForm(forms.ModelForm):
     class Meta:
         model = Consumable
-        # 1. 'fields' must match the attribute names in models.py exactly
         fields = ['description_of_inventory_item', 'quantity', 'number_issued', 'balance_in_stock']
         widgets = {
             'description_of_inventory_item': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Item description'}),
-            'quantity': forms.NumberInput(attrs={'class': 'form-control'}), # Fixed typo: quantiy -> quantity
-            'number_issued': forms.NumberInput(attrs={'class': 'form-control'}), # Fixed typo: sforms -> forms
+            'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'number_issued': forms.NumberInput(attrs={'class': 'form-control'}),
             'balance_in_stock': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Remaining stock'}),
         }
 
