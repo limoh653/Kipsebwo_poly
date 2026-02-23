@@ -18,6 +18,8 @@ from django.db import models, transaction
 from django.db.models import Q
 from decimal import Decimal
 from .forms import FeeForm  # Assuming your form is named FeeForm
+from .forms import ExaminationForm, KnecPaymentForm  # Check if it's 'Knec' or 'KNEC'
+from django.views.decorators.cache import never_cache
 # 1. Access Control Decorator
 def department_required(dept_name):
     def decorator(view_func):
@@ -128,53 +130,94 @@ def redirect_after_login(request):
     return redirect('dashboard')
 # --- ADMISSIONS DEPT ---
 
+def get_academic_progress(student):
+    today = date.today()
+    # Total months since admission
+    total_months = (today.year - student.admission_date.year) * 12 + (today.month - student.admission_date.month)
+    
+    if total_months >= student.projected_duration_months and student.status == 'Active':
+        student.status = 'Completed'
+        student.save()
+        return "Completed", "N/A", "N/A", student.admission_date.strftime('%B')
+
+    # Year calculation: 0-11 months = Year 1, 12-23 months = Year 2, etc.
+    current_year = (total_months // 12) + 1
+    
+    # Term calculation: 4 month cycles
+    term_index = (total_months % 12) // 4
+    current_term = min(term_index + 1, 3)
+    
+    return student.status, f"Year {current_year}", f"Term {current_term}", student.admission_date.strftime('%B')
+
 @department_required('admissions')
 @login_required
+
 def admissions_view(request):
     page_title = 'ST AUGUSTINE KIPSEBWO VOCATIONAL TRAINING CENTRE'
     
-    students_list = Student.objects.all()
+    # 1. Start with the base QuerySet
+    students_query = Student.objects.all()
+    
+    # 2. Extract GET parameters
     search_query = request.GET.get('search', '')
     gender_filter = request.GET.get('gender', '')
-    
-    # Filtering Logic
+    course_filter = request.GET.get('course', '')
+
+    # 3. Apply Filters to the QuerySet
     if search_query:
-        students_list = students_list.filter(
+        students_query = students_query.filter(
             models.Q(name__icontains=search_query) | 
             models.Q(admission_number__icontains=search_query)
         )
     if gender_filter:
-        students_list = students_list.filter(sex=gender_filter)
+        students_query = students_query.filter(sex=gender_filter)
+    if course_filter:
+        students_query = students_query.filter(course=course_filter)
 
-    courses = Student.objects.values_list('course', flat=True).distinct()
-    grouped_students = {course: students_list.filter(course=course) for course in courses}
+    # 4. Get distinct courses based on filtered students
+    course_list = students_query.values_list('course', flat=True).distinct()
+    
+    # 5. Group students AND attach dynamic attributes
+    grouped_students = {}
+    for course in course_list:
+        # Get students for this specific course
+        course_students = list(students_query.filter(course=course))
+        
+        # PROCESS EACH STUDENT HERE: This attaches the missing data
+        for s in course_students:
+            status, yr, trm, month = get_academic_progress(s)
+            s.display_status = status
+            s.current_year_study = yr
+            s.current_term_study = trm
+            s.admission_month = month
+            
+        grouped_students[course] = course_students
 
+    # 6. Handling the POST request (Registration)
     if request.method == 'POST':
         form = StudentForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                # The Signal in models.py will automatically create FeeBalance 
-                # the moment student.save() is called inside form.save()
-                student = form.save()
-
-                AuditTrail.objects.create(
-                    user=request.user, 
-                    action=f"Admitted student: {student.name}"
-                )
-                
-                # Check if the signal successfully found a fee structure
-                # We fetch it to show a nice message to the user
-                balance_record = getattr(student, 'fee_balance', None)
-                
-                if balance_record and balance_record.total_invoiced > 0:
-                    messages.success(request, f"Student {student.name} admitted. Fees initialized to {balance_record.total_invoiced}.")
+                selected_course = form.cleaned_data.get('course')
+                if not FeeStructure.objects.filter(course=selected_course).exists():
+                    messages.error(request, f"Admission Denied: No Fee Structure found for '{selected_course}'.")
                 else:
-                    messages.warning(request, f"Student admitted, but no matching Fee Structure was found for {student.course}. Please check Finance settings.")
+                    student = form.save()
+                    AuditTrail.objects.create(
+                        user=request.user, 
+                        action=f"Admitted student: {student.name}"
+                    )
+                    
+                    # Check if balance was created (usually via signals)
+                    balance_record = getattr(student, 'fee_balance', None)
+                    if balance_record:
+                        messages.success(request, f"Student {student.name} admitted successfully.")
+                    else:
+                        messages.warning(request, f"Student admitted, but fees not initialized.")
 
-                return redirect('admissions')
-            
+                    return redirect('admissions')
             except Exception as e:
-                messages.error(request, f"System Error during admission: {str(e)}")
+                messages.error(request, f"System Error: {str(e)}")
     else:
         form = StudentForm()
     
@@ -182,14 +225,26 @@ def admissions_view(request):
         'grouped_students': grouped_students, 
         'form': form, 
         'search_query': search_query,
-        'page_title': page_title
+        'page_title': page_title,
+        'courses': course_list # For the course filter dropdown if used
     }
     return render(request, 'admissions.html', context)
+
 @login_required
 def student_profile_view(request, pk):
-    """View showing all details: Boarding status, photos, and current status."""
+    """View showing all details including dynamic year and term."""
     student = get_object_or_404(Student, pk=pk)
-    return render(request, 'student_profile.html', {'student': student})
+    
+    # Calculate dynamic data for profile view
+    status, yr, trm, month = get_academic_progress(student)
+    
+    context = {
+        'student': student,
+        'current_year': yr,
+        'current_term': trm,
+        'admission_month': month
+    }
+    return render(request, 'student_profile.html', context)
 
 @department_required('admissions')
 @login_required
@@ -208,39 +263,47 @@ def edit_student_view(request, pk):
     return render(request, 'edit_student.html', {'form': form, 'student': student})
 # --- FINANCE DEPT ---
 
-@department_required('finance')
-@login_required
 def finance_view(request):
-    # 1. Fetch search parameters
+    # 1. Fetch search AND date parameters
     search_adm = request.GET.get('search_adm', '').strip()
     search_query = request.GET.get('search', '').strip()
+    date_from = request.GET.get('date_from') # Added
+    date_to = request.GET.get('date_to')     # Added
     
-    # NEW: Handle "Edit Mode" for the dashboard
     edit_id = request.GET.get('edit_id')
     edit_structure = None
     if edit_id:
         edit_structure = get_object_or_404(FeeStructure, id=edit_id)
 
-    # 2. Get all students and fee structures
+    # 2. Get base querysets
     students = Student.objects.all().select_related('fee_balance')
     fee_structures = FeeStructure.objects.all().order_by('-financial_year', '-id')
+    recent_payments = Payment.objects.all().select_related('student').order_by('-date_paid')
 
-    # 3. Handle Searching
+    # 3. Handle Date Filtering (The missing logic)
+    if date_from and date_to:
+        # Filter payments within the range and show ALL of them
+        recent_payments = recent_payments.filter(date_paid__date__range=[date_from, date_to])
+    else:
+        # If no filter is applied, only show the 10 most recent
+        recent_payments = recent_payments[:10]
+
+    # 4. Handle Student Searching
     search_result = students.filter(admission_number=search_adm).first() if search_adm else None
     if search_query:
         students = students.filter(
             Q(name__icontains=search_query) | Q(admission_number__icontains=search_query)
         )
 
-    recent_payments = Payment.objects.all().select_related('student').order_by('-date_paid')[:10]
-    
     return render(request, 'finance.html', {
         'students': students, 
         'search_result': search_result,
         'fee_structures': fee_structures,
         'recent_payments': recent_payments,
         'search_query': search_query,
-        'edit_structure': edit_structure,  # Passed to trigger the edit form in your template
+        'edit_structure': edit_structure,
+        'date_from': date_from, # Pass back to keep value in input
+        'date_to': date_to,     # Pass back to keep value in input
     })
 
 @department_required('finance')
@@ -470,108 +533,241 @@ def generate_receipt(request, payment_id):
         'student': student,
         'balance': balance,
     })
+
+
 @department_required('finance')
 @login_required
+@never_cache
 def print_fee_structure(request, pk):
+    # Fetch the structure and use .refresh_from_db() to be 100% sure 
+    # we aren't looking at a cached version.
     structure = get_object_or_404(FeeStructure, id=pk)
+    structure.refresh_from_db()
     
-    # For now, let's just render a simple print template
     return render(request, 'print_fee_template.html', {
         'structure': structure,
+        # Property methods will now calculate using fresh data
+        't1_total': structure.term1_total,
+        't2_total': structure.term2_total,
+        't3_total': structure.term3_total,
+    })
+@department_required('finance')
+@login_required
+def print_transactions(request):
+    """Generates a printable report of transactions between two dates."""
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if not start_date or not end_date:
+        messages.error(request, "Please select both a start and end date to print.")
+        return redirect('finance_view')
+
+    # Fetch payments within the range
+    payments = Payment.objects.filter(
+        date_paid__range=[start_date, end_date]
+    ).select_related('student').order_by('date_paid')
+
+    total_collected = sum(p.amount for p in payments)
+
+    return render(request, 'transactions_report_print.html', {
+        'payments': payments,
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_collected': total_collected,
+        'print_date': timezone.now()
     })
 # examinations
 @department_required('examinations')
 @login_required
 def examinations_view(request):
-    query = request.GET.get('q')
-    student = None
+    # 1. Setup Filters & Initial State
+    query = request.GET.get('q', '').strip()
+    course_filter = request.GET.get('course', '').strip()
+    year_filter = request.GET.get('year', '').strip()
+    term_filter = request.GET.get('term', '').strip()
     
-    # 1. Handling Search/List Logic
-    if query:
-        student = Student.objects.filter(admission_number=query).first()
-        exams = Examination.objects.filter(student=student).order_by('year_of_study', 'semester', 'subject_name') if student else Examination.objects.none()
-    else:
-        exams = Examination.objects.all().select_related('student').order_by('student__course', 'year_of_study', 'semester', 'student__name')
+    # 2. Handle GET Edit IDs
+    edit_exam_id = request.GET.get('edit_exam')
+    edit_knec_id = request.GET.get('edit_payment') 
 
-    # 2. Handling POST requests (Save/Update/Delete)
+    # 3. Fetch Instances (Previous Records)
+    exam_instance = Examination.objects.filter(id=edit_exam_id).first() if edit_exam_id else None
+    knec_instance = KnecPayment.objects.filter(id=edit_knec_id).first() if edit_knec_id else None
+
+    # --- THE FIX: Initialize both forms early so they are NEVER "Unbound" ---
+    form = ExaminationForm(instance=exam_instance)
+    knec_form = KnecPaymentForm(instance=knec_instance)
+
+    # 4. Handle POST Requests
     if request.method == 'POST':
-        # DELETE LOGIC
-        if 'delete_id' in request.POST:
-            exam_to_delete = get_object_or_404(Examination, id=request.POST.get('delete_id'))
-            student_name = exam_to_delete.student.name
-            subject = exam_to_delete.subject_name
-            exam_to_delete.delete()
-            AuditTrail.objects.create(user=request.user, action=f"Deleted marks for {student_name} (Subject: {subject})")
-            messages.success(request, "Record deleted successfully.")
-            return redirect('examinations')
+        if 'submit_payment' in request.POST:
+            # Re-bind knec_form with POST data
+            knec_form = KnecPaymentForm(request.POST, instance=knec_instance)
+            if knec_form.is_valid():
+                if knec_instance:
+                    knec_form.save()
+                    action_msg = f"Edited KNEC record for {knec_instance.student.name}"
+                else:
+                    data = knec_form.cleaned_data
+                    obj, created = KnecPayment.objects.get_or_create(
+                        student=data['student'],
+                        exam_series=data['exam_series'],
+                        defaults={'required_amount': data['required_amount'], 'amount_paid': 0}
+                    )
+                    obj.amount_paid += data['amount_paid']
+                    obj.required_amount = data['required_amount']
+                    obj.save()
+                    action_msg = f"Added KES {data['amount_paid']} to {obj.student.name}"
 
-        # SAVE/UPDATE LOGIC
-        instance_id = request.POST.get('instance_id')
-        instance = Examination.objects.filter(id=instance_id).first() if instance_id else None
-        form = ExaminationForm(request.POST, instance=instance)
-        
-        if form.is_valid():
-            # The .save() call here triggers the average calculation we wrote in the Model
-            exam = form.save() 
-            
-            action_type = "Updated" if instance_id else "Recorded"
-            AuditTrail.objects.create(
-                user=request.user, 
-                action=f"{action_type} marks: {exam.student.name} - {exam.subject_name} (Total: {exam.total_marks})"
-            )
-            messages.success(request, f"Marks for {exam.subject_name} saved successfully. Total: {exam.total_marks}")
-            return redirect('examinations')
-            
-    # 3. Handling GET request (Edit/Empty Form)
+                AuditTrail.objects.create(user=request.user, action=action_msg)
+                messages.success(request, "KNEC Payment processed.")
+                return redirect('examinations')
+            else:
+                print(f"❌ KNEC VALIDATION ERROR: {knec_form.errors}")
+
+        elif 'submit_marks' in request.POST:
+            # Re-bind 'form' with POST data
+            form = ExaminationForm(request.POST, instance=exam_instance)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Marks updated successfully.")
+                return redirect('examinations')
+
+    # 5. Apply Exclusive Filtering (Displays only the student being edited)
+    if knec_instance:
+        knec_payments = KnecPayment.objects.filter(id=edit_knec_id).select_related('student')
+        exams = Examination.objects.none()
+        students = Student.objects.filter(id=knec_instance.student.id)
+        student = knec_instance.student
+    elif exam_instance:
+        exams = Examination.objects.filter(id=edit_exam_id).select_related('student')
+        knec_payments = KnecPayment.objects.none()
+        students = Student.objects.filter(id=exam_instance.student.id)
+        student = exam_instance.student
     else:
-        edit_id = request.GET.get('edit')
-        instance = Examination.objects.filter(id=edit_id).first() if edit_id else None
-        form = ExaminationForm(instance=instance)
+        # Normal List View with Filters
+        exams = Examination.objects.all().select_related('student')
+        knec_payments = KnecPayment.objects.all().select_related('student')
+        students = Student.objects.all()
+        student = None
 
-    return render(request, 'examinations.html', {
+        if query:
+            student = Student.objects.filter(admission_number=query).first()
+            if student:
+                exams = exams.filter(student=student)
+                knec_payments = knec_payments.filter(student=student)
+                students = students.filter(id=student.id)
+        
+        if course_filter:
+            exams = exams.filter(student__course__icontains=course_filter)
+            knec_payments = knec_payments.filter(student__course__icontains=course_filter)
+
+    exams = exams.order_by('student__course', 'year_of_study', 'semester', 'student__name')
+
+    # 6. Final Render (Both 'form' and 'knec_form' are now guaranteed to exist)
+    context = {
         'form': form, 
+        'knec_form': knec_form,
         'exams': exams, 
-        'student': student, 
-        'query': query
-    })
-# --- STORES ---
+        'knec_payments': knec_payments,
+        'students': students, 
+        'student': student,
+        'is_editing': bool(knec_instance or exam_instance),
+    }
+    return render(request, 'examinations.html', context)
 
+@login_required
+def print_student_report(request, student_id):
+    """Generates a printable report card for a single student."""
+    student = get_object_or_404(Student, id=student_id)
+    year = request.GET.get('year')
+    term = request.GET.get('term')
+    
+    exams = Examination.objects.filter(student=student)
+    if year: exams = exams.filter(year_of_study=year)
+    if term: exams = exams.filter(semester=term)
+    
+    # Statistical Calculation
+    stats = exams.aggregate(
+        avg_score=Avg('total_marks'),
+        total_subjects=Avg('id') # Using Avg here just to get a count via aggregate if needed
+    )
+    mean_score = stats['avg_score'] or 0
+    count = exams.count()
+
+    return render(request, 'reports/student_report_print.html', {
+        'student': student,
+        'exams': exams,
+        'year': year,
+        'term': term,
+        'mean_score': round(mean_score, 2),
+        'subject_count': count,
+        'print_date': timezone.now()
+    })
+
+@login_required
+def print_course_results(request):
+    """Generates a printable broadsheet for a specific course/year/term."""
+    course = request.GET.get('course')
+    year = request.GET.get('year')
+    term = request.GET.get('term')
+
+    if not all([course, year, term]):
+        messages.error(request, "Please provide Course, Year, and Term to generate a broadsheet.")
+        return redirect('examinations')
+
+    exams = Examination.objects.filter(
+        student__course__icontains=course,
+        year_of_study=year,
+        semester=term
+    ).select_related('student').order_by('student__name', 'subject_name')
+
+    return render(request, 'reports/course_results_print.html', {
+        'exams': exams,
+        'course': course,
+        'year': year,
+        'term': term,
+        'print_date': timezone.now()
+    })
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils import timezone
+from .models import Consumable, PermanentEquipment, AuditTrail
+from .forms import ConsumableForm, EquipmentForm
+
+# --- MAIN STORES VIEW ---
 @department_required('stores')
 @login_required
 def stores_view(request):
-    consumables = Consumable.objects.all()
-    equipment = PermanentEquipment.objects.all()
+    # 1. Fetch data
+    consumables = Consumable.objects.all().order_by('description_of_inventory_item')
+    equipment = PermanentEquipment.objects.all().order_by('asset_description')
     
-    # Initialize forms
+    # 2. Initialize Forms (Blank by default)
     c_form = ConsumableForm()
     e_form = EquipmentForm()
 
+    # 3. Handle Addition of New Items
     if request.method == 'POST':
-        # Handling Consumables (New fields: description_of_inventory_item, quantity, etc.)
+        # Add Consumable
         if 'add_consumable' in request.POST:
             c_form = ConsumableForm(request.POST)
             if c_form.is_valid():
                 item = c_form.save(commit=False)
                 item.added_by = request.user
                 item.save()
-                AuditTrail.objects.create(
-                    user=request.user, 
-                    action=f"Added Consumable: {item.description_of_inventory_item}"
-                )
+                AuditTrail.objects.create(user=request.user, action=f"Added Consumable: {item.description_of_inventory_item}")
                 messages.success(request, "Consumable added successfully")
                 return redirect('stores')
 
-        # Handling Equipment (New fields: asset_description, serial_number, etc.)
+        # Add Equipment
         elif 'add_equipment' in request.POST:
             e_form = EquipmentForm(request.POST)
             if e_form.is_valid():
                 item = e_form.save(commit=False)
                 item.added_by = request.user
                 item.save()
-                AuditTrail.objects.create(
-                    user=request.user, 
-                    action=f"Added Equipment: {item.asset_description}"
-                )
+                AuditTrail.objects.create(user=request.user, action=f"Added Equipment: {item.asset_description}")
                 messages.success(request, "Equipment added successfully")
                 return redirect('stores')
 
@@ -579,63 +775,58 @@ def stores_view(request):
         'consumables': consumables, 
         'equipment': equipment, 
         'c_form': c_form, 
-        'e_form': e_form
+        'e_form': e_form,
     }
     return render(request, 'stores.html', context)
 
-# --- UPDATED EDIT LOGIC TO FIX ATTRIBUTE ERROR ---
-
+# --- EDIT LOGIC ---
 @department_required('stores')
 @login_required
 def edit_store_item(request, item_type, pk):
-    """
-    This is the missing function your URL configuration is looking for.
-    It routes the request to the correct specific edit view.
-    """
+    """Router for editing items based on type."""
     if item_type == 'consumable':
-        return edit_consumable(request, pk)
-    elif item_type == 'equipment':
-        return edit_equipment(request, pk)
+        item = get_object_or_404(Consumable, pk=pk)
+        form_class = ConsumableForm
+        title = "Edit Consumable"
+        action_name = item.description_of_inventory_item
     else:
-        messages.error(request, "Invalid item type specified.")
-        return redirect('stores')
+        item = get_object_or_404(PermanentEquipment, pk=pk)
+        form_class = EquipmentForm
+        title = "Edit Equipment"
+        action_name = item.asset_description
 
-@department_required('stores')
-@login_required
-def edit_consumable(request, pk):
-    item = get_object_or_404(Consumable, pk=pk)
     if request.method == 'POST':
-        form = ConsumableForm(request.POST, instance=item)
+        form = form_class(request.POST, instance=item)
         if form.is_valid():
             form.save()
-            AuditTrail.objects.create(
-                user=request.user, 
-                action=f"Edited Consumable: {item.description_of_inventory_item}"
-            )
-            messages.success(request, "Consumable updated successfully")
+            AuditTrail.objects.create(user=request.user, action=f"Edited {item_type}: {action_name}")
+            messages.success(request, f"{item_type.capitalize()} updated successfully")
             return redirect('stores')
     else:
-        form = ConsumableForm(instance=item)
-    return render(request, 'edit_item.html', {'form': form, 'title': 'Edit Consumable'})
+        # Pre-fills the form with existing data
+        form = form_class(instance=item)
 
+    return render(request, 'edit_item.html', {'form': form, 'title': title, 'item': item})
+
+# --- PRINT REPORT VIEWS ---
 @department_required('stores')
 @login_required
-def edit_equipment(request, pk):
-    item = get_object_or_404(PermanentEquipment, pk=pk)
-    if request.method == 'POST':
-        form = EquipmentForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            AuditTrail.objects.create(
-                user=request.user, 
-                action=f"Edited Equipment: {item.asset_description}"
-            )
-            messages.success(request, "Equipment updated successfully")
-            return redirect('stores')
+def print_inventory(request, report_type):
+    """Dedicated view for printer-friendly reports."""
+    if report_type == 'consumables':
+        items = Consumable.objects.all().order_by('description_of_inventory_item')
+        template = 'reports/print_consumables.html'
+        title = "Consumables Inventory Report"
     else:
-        form = EquipmentForm(instance=item)
-    return render(request, 'edit_item.html', {'form': form, 'title': 'Edit Equipment'})
-# --- USER MANAGEMENT ---
+        items = PermanentEquipment.objects.all().order_by('asset_description')
+        template = 'reports/print_equipment.html'
+        title = "Permanent Equipment Inventory Report"
+
+    return render(request, template, {
+        'items': items,
+        'title': title,
+        'print_date': timezone.now()
+    })
 
 @user_passes_test(lambda u: u.is_staff)
 def admin_management_view(request):

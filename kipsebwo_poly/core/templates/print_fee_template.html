@@ -17,7 +17,6 @@
             padding: 20px;
             border: 1px solid #eee;
         }
-        /* Header Styling */
         .header {
             text-align: center;
             margin-bottom: 20px;
@@ -30,8 +29,6 @@
             border-bottom: 2px solid #000;
             margin: 10px 0;
         }
-
-        /* Student/Course Info */
         .info-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -39,8 +36,6 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
-
-        /* Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -58,8 +53,6 @@
         }
         .text-right { text-align: right; }
         .bold { font-weight: bold; }
-
-        /* Footer */
         .footer {
             margin-top: 40px;
             display: flex;
@@ -71,8 +64,6 @@
             text-align: center;
             padding-top: 5px;
         }
-
-        /* Print Button */
         .no-print {
             text-align: right;
             margin-bottom: 15px;
@@ -85,7 +76,6 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         @media print {
             .no-print { display: none; }
             body { padding: 0; }
@@ -131,56 +121,64 @@
                     <td class="text-right">{{ structure.ltt_t1|default:"0" }}</td>
                     <td class="text-right">{{ structure.ltt_t2|default:"0" }}</td>
                     <td class="text-right">{{ structure.ltt_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.ltt_total|default:"0" }}</td>
+                    <td class="text-right bold">
+                        {{ structure.ltt_t1|add:structure.ltt_t2|add:structure.ltt_t3 }}
+                    </td>
                 </tr>
                 <tr>
                     <td>BOARDING FEE</td>
-                    <td class="text-right">{{ structure.boarding_t1|default:"0" }}</td>
-                    <td class="text-right">{{ structure.boarding_t2|default:"0" }}</td>
-                    <td class="text-right">{{ structure.boarding_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.boarding_total|default:"0" }}</td>
+                    <td class="text-right">{{ structure.boarding_fee_t1|default:"0" }}</td>
+                    <td class="text-right">{{ structure.boarding_fee_t2|default:"0" }}</td>
+                    <td class="text-right">{{ structure.boarding_fee_t3|default:"0" }}</td>
+                    <td class="text-right bold">
+                        {{ structure.boarding_fee_t1|add:structure.boarding_fee_t2|add:structure.boarding_fee_t3 }}
+                    </td>
                 </tr>
                 <tr>
                     <td>P.T.A (Lunch & Tea)</td>
                     <td class="text-right">{{ structure.pta_t1|default:"0" }}</td>
                     <td class="text-right">{{ structure.pta_t2|default:"0" }}</td>
                     <td class="text-right">{{ structure.pta_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.pta_total|default:"0" }}</td>
+                    <td class="text-right bold">
+                        {{ structure.pta_t1|add:structure.pta_t2|add:structure.pta_t3 }}
+                    </td>
                 </tr>
                 <tr>
                     <td>MEDICAL</td>
                     <td class="text-right">{{ structure.medical_t1|default:"0" }}</td>
                     <td class="text-right">{{ structure.medical_t2|default:"0" }}</td>
                     <td class="text-right">{{ structure.medical_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.medical_total|default:"0" }}</td>
+                    <td class="text-right bold">
+                        {{ structure.medical_t1|add:structure.medical_t2|add:structure.medical_t3 }}
+                    </td>
                 </tr>
                 <tr>
                     <td>CONTINGENCIES</td>
-                    <td class="text-right">{{ structure.contingency_t1|default:"0" }}</td>
-                    <td class="text-right">{{ structure.contingency_t2|default:"0" }}</td>
-                    <td class="text-right">{{ structure.contingency_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.contingency_total|default:"0" }}</td>
+                    <td class="text-right">{{ structure.contingencies_t1|default:"0" }}</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right bold">{{ structure.contingencies_t1|default:"0" }}</td>
                 </tr>
                 <tr>
-                    <td>ADMISSION FEE</td>
-                    <td class="text-right">{{ structure.admission_t1|default:"0" }}</td>
-                    <td class="text-right">{{ structure.admission_t2|default:"0" }}</td>
-                    <td class="text-right">{{ structure.admission_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.admission_total|default:"0" }}</td>
+                    <td>ADMISSION FEE (New Students)</td>
+                    <td class="text-right">{{ structure.adm_fee|default:"0" }}</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right bold">{{ structure.adm_fee|default:"0" }}</td>
                 </tr>
                 <tr>
                     <td>STUDENT ID CARD</td>
-                    <td class="text-right">{{ structure.id_t1|default:"0" }}</td>
-                    <td class="text-right">{{ structure.id_t2|default:"0" }}</td>
-                    <td class="text-right">{{ structure.id_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.id_total|default:"0" }}</td>
+                    <td class="text-right">{{ structure.student_id|default:"0" }}</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right bold">{{ structure.student_id|default:"0" }}</td>
                 </tr>
                 <tr>
                     <td>CAUTION MONEY</td>
-                    <td class="text-right">{{ structure.caution_t1|default:"0" }}</td>
-                    <td class="text-right">{{ structure.caution_t2|default:"0" }}</td>
-                    <td class="text-right">{{ structure.caution_t3|default:"0" }}</td>
-                    <td class="text-right bold">{{ structure.caution_total|default:"0" }}</td>
+                    <td class="text-right">{{ structure.caution_money|default:"0" }}</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right">0.00</td>
+                    <td class="text-right bold">{{ structure.caution_money|default:"0" }}</td>
                 </tr>
                 <tr style="background-color: #eee; font-weight: bold;">
                     <td>TOTAL PER TERM (KSH)</td>
@@ -188,7 +186,7 @@
                     <td class="text-right">{{ structure.term2_total|default:"0" }}</td>
                     <td class="text-right">{{ structure.term3_total|default:"0" }}</td>
                     <td class="text-right">
-                        {% widthratio 1 1 structure.term1_total|add:structure.term2_total|add:structure.term3_total %}
+                        {{ structure.term1_total|add:structure.term2_total|add:structure.term3_total }}
                     </td>
                 </tr>
             </tbody>

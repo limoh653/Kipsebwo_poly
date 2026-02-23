@@ -27,7 +27,7 @@
             
             <div style="margin-top: 20px;">
                 <p><strong>Status:</strong> 
-                    <span style="padding: 5px 12px; border-radius: 15px; background: #27ae60; color: white; font-size: 14px;">{{ student.status }}</span>
+                    <span style="padding: 5px 12px; border-radius: 15px; background: {% if student.status == 'Completed' %}#95a5a6{% else %}#27ae60{% endif %}; color: white; font-size: 14px;">{{ student.status }}</span>
                 </p>
                 <p><strong>Type:</strong> {{ student.residence }}</p>
             </div>
@@ -44,7 +44,10 @@
             <h4 style="border-bottom: 2px solid #3498db; padding-bottom: 5px; color: #3498db; margin-top: 25px;">Academic Information</h4>
             <table style="width: 100%; text-align: left; border-spacing: 0 10px;">
                 <tr><th style="width: 200px;">Course:</th><td>{{ student.course }}</td></tr>
-                <tr><th>Year Enrolled:</th><td>{{ student.year_enrolled }}</td></tr>
+                <tr><th>Enrollment Date:</th><td>{{ admission_month }} {{ student.year_enrolled }}</td></tr>
+                <tr><th>Current Year:</th><td>Year {{ current_year }}</td></tr>
+                <tr><th>Current Term:</th><td>Term {{ current_term }}</td></tr>
+                <tr><th>Projected Duration:</th><td>{{ student.projected_duration_months }} Months</td></tr>
                 <tr><th>Last School:</th><td>{{ student.last_school }}</td></tr>
             </table>
 

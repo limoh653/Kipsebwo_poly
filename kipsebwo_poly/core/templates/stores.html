@@ -78,6 +78,8 @@
         .btn-add:hover { background: #219150; }
         .btn-edit { background: var(--warning); color: white; padding: 6px 12px; }
         .btn-edit:hover { background: #d68910; }
+        .btn-print { background: var(--secondary); color: white; margin-left: 10px; }
+        .btn-print:hover { background: #1a252f; }
 
         /* Tables */
         .table-wrapper { width: 100%; overflow-x: auto; background: var(--white); border: 1px solid var(--border); border-radius: 8px; }
@@ -92,13 +94,26 @@
         .badge-fair { background: #fff3cd; color: #856404; }
         .badge-damaged { background: #f8d7da; color: #721c24; }
         .badge-disposed { background: #e2e3e5; color: #383d41; }
+
+        /* PRINT STYLES */
+        @media print {
+            .main-header, .tabs, .form-section, .btn-edit, .btn-add, .btn-print, .back-link, .alert {
+                display: none !important;
+            }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; }
+            .table-wrapper { border: none; overflow: visible; }
+            table { min-width: 100% !important; border: 1px solid #000; }
+            th, td { border: 1px solid #000; }
+            h2 { border-bottom: 2px solid #000; text-align: center; }
+        }
     </style>
 </head>
 <body>
 
 <header class="main-header">
     <div class="header-title">
-        <h1>KIPSEBWO VTC STORES DEPARTMENT</h1>
+        <h1> ST AUGUSTINE KIPSEBWO VTC STORES DEPARTMENT</h1>
         <div class="header-subtitle">Vocational Training Center | Inventory & Asset Registry</div>
     </div>
     <div>
@@ -107,7 +122,13 @@
 </header>
 
 <div class="container">
-    <h2>Inventory Management Dashboard</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Inventory Management Dashboard</h2>
+        <div class="no-print">
+            <a href="{% url 'print_inventory' 'consumables' %}" target="_blank" class="btn btn-print">Print Consumables Report</a>
+            <a href="{% url 'print_inventory' 'equipment' %}" target="_blank" class="btn btn-print">Print Equipment Report</a>
+        </div>
+    </div>
 
     {% if messages %}
         {% for message in messages %}
@@ -143,7 +164,7 @@
                         <th>Qty Issued</th>
                         <th>Current Balance</th>
                         <th>Date Supplied</th>
-                        <th>Actions</th>
+                        <th class="no-print">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -154,7 +175,7 @@
                         <td>{{ item.number_issued }}</td>
                         <td><strong style="color: var(--primary)">{{ item.balance_in_stock }}</strong></td>
                         <td>{{ item.date_supplied|date:"d/m/Y" }}</td>
-                        <td>
+                        <td class="no-print">
                             <a href="{% url 'edit_store_item' 'consumable' item.id %}" class="btn btn-edit">Edit</a>
                         </td>
                     </tr>
@@ -193,7 +214,7 @@
                         <th>Condition</th>
                         <th>Disposal Date</th>
                         <th>Remarks</th>
-                        <th>Actions</th>
+                        <th class="no-print">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -216,7 +237,7 @@
                         </td>
                         <td>{{ item.date_of_disposal|date:"d/m/Y"|default:"-" }}</td>
                         <td title="{{ item.remarks }}"><small>{{ item.remarks|truncatechars:25|default:"-" }}</small></td>
-                        <td>
+                        <td class="no-print">
                             <a href="{% url 'edit_store_item' 'equipment' item.id %}" class="btn btn-edit">Edit</a>
                         </td>
                     </tr>

@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="background: #2c3e50; color: white; padding: 25px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #27ae60; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+<div style="background: #2c3e50; color: white; padding: 25px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #27ae60; box-shadow: 0 4px 10px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 20px;">
     <div>
-        <h1 style="margin: 0; font-size: 2em; letter-spacing: 1px; text-transform: uppercase;">KIPSEBWO VTC</h1>
+        <h1 style="margin: 0; font-size: 2em; letter-spacing: 1px; text-transform: uppercase;"> ST AUGUSTINE KIPSEBWO VTC</h1>
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
             <span style="background: #27ae60; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; font-weight: bold;">OFFICIAL</span>
             <p style="margin: 0; opacity: 0.9; font-size: 1.1em;">Examinations & Academic Records Department</p>
         </div>
     </div>
     <div style="text-align: right;">
-        <a href="{% url 'dashboard' %}" style="display: inline-block; color: #ffffff; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); padding: 8px 18px; border-radius: 4px; font-size: 0.9em; transition: 0.3s; background: rgba(255,255,255,0.05);">
+        <a href="{% url 'dashboard' %}" class="no-print" style="display: inline-block; color: #ffffff; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); padding: 8px 18px; border-radius: 4px; font-size: 0.9em; transition: 0.3s; background: rgba(255,255,255,0.05);">
             ← Back to Dashboard
         </a>
         <p style="margin: 12px 0 0 0; font-size: 0.9em; color: #bdc3c7; font-weight: 500;">
@@ -21,126 +21,148 @@
 
 <div style="padding: 30px; max-width: 1400px; margin: 0 auto;">
     
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <h2 style="margin: 0; color: #2c3e50; font-size: 1.5em; border-left: 5px solid #34495e; padding-left: 15px;">Student Grade Management</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
+        <h2 style="margin: 0; color: #2c3e50; font-size: 1.5em; border-left: 5px solid #34495e; padding-left: 15px;">Student Grade & Fee Management</h2>
         
-        <form method="GET" style="display: flex; gap: 10px; background: #fff; padding: 5px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-            <input type="text" name="q" placeholder="Enter Admission Number..." value="{{ query|default:'' }}" 
-                   style="padding: 12px; width: 280px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95em;">
-            <button type="submit" style="padding: 10px 25px; background: #34495e; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
-                Search Student
-            </button>
-            {% if query %}
-                <a href="{% url 'examinations' %}" style="padding: 12px; color: #e74c3c; text-decoration: none; font-weight: bold; display: flex; align-items: center;">✕ Clear</a>
+        <div class="no-print" style="display: flex; gap: 15px; flex-wrap: wrap;">
+            {% if exams %}
+                <button onclick="window.print()" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                    <span>Print All Records</span>
+                </button>
             {% endif %}
-        </form>
+
+            <form method="GET" style="display: flex; gap: 10px; background: #fff; padding: 5px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                <input type="text" name="q" placeholder="Enter Admission Number..." value="{{ query|default:'' }}" 
+                       style="padding: 12px; width: 250px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95em;">
+                <button type="submit" style="padding: 10px 20px; background: #34495e; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    Search
+                </button>
+                {% if query %}
+                    <a href="{% url 'examinations' %}" style="padding: 12px; color: #e74c3c; text-decoration: none; font-weight: bold;">✕</a>
+                {% endif %}
+            </form>
+        </div>
     </div>
 
-    <div style="background: #ffffff; padding: 30px; border-radius: 12px; margin-bottom: 45px; border: 1px solid #e0e0e0; box-shadow: 0 8px 20px rgba(0,0,0,0.04);">
-        <form method="POST">
-            {% csrf_token %}
-            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #f1f4f6; padding-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                {% if form.instance.pk %} 
-                    <span style="color: #2980b9;">📝 Edit Results for: {{ form.instance.student.name }}</span>
-                {% else %} 
-                    <span style="color: #27ae60;">➕ Add New Performance Record</span>
-                {% endif %}
-            </h3>
-            
-            <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-top: 20px;">
-                {{ form.as_p }}
-                {% if form.instance.pk %}
-                    <input type="hidden" name="instance_id" value="{{ form.instance.pk }}">
-                {% endif %}
-            </div>
-
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #f1f4f6;">
-                <button type="submit" class="btn btn-add" style="padding: 14px 35px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.2);">
-                    {% if form.instance.pk %} Update Grade Record {% else %} Save Examination Data {% endif %}
+    <div class="no-print" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; margin-bottom: 45px;">
+        
+        <div style="background: #ffffff; padding: 25px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 8px 20px rgba(0,0,0,0.04);">
+            <form method="POST">
+                {% csrf_token %}
+                <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #f1f4f6; padding-bottom: 15px;">
+                    <span style="color: #27ae60;">➕ Add Student Marks</span>
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" name="submit_marks" style="margin-top: 15px; width: 100%; padding: 14px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    Save Examination Data
                 </button>
-                {% if form.instance.pk %}
-                    <a href="{% url 'examinations' %}" style="margin-left: 20px; color: #95a5a6; text-decoration: none; font-weight: 500;">Cancel and Return</a>
-                {% endif %}
-            </div>
-        </form>
+            </form>
+        </div>
+
+        <div style="background: #ffffff; padding: 25px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0 8px 20px rgba(0,0,0,0.04);">
+            <form method="POST">
+                {% csrf_token %}
+                <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #f1f4f6; padding-bottom: 15px;">
+    <span style="color: #2980b9;">
+        {% if request.GET.edit_payment %}📝 Edit KNEC Record{% else %}💳 Record KNEC Payment{% endif %}
+    </span>
+    {% if request.GET.edit_payment %}
+        <a href="{% url 'examinations' %}" style="float: right; font-size: 0.6em; color: #e74c3c; text-decoration: none;">Cancel</a>
+    {% endif %}
+</h3>
+                <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                    {% if knec_payment_form %}
+                        {{ knec_payment_form.as_p }}
+                    {% else %}
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-weight: bold;">Student</label>
+                            <select name="student" class="form-control" style="width:100%; padding:10px; border-radius:4px; border:1px solid #ddd;">
+                                {% for s in students %}
+                                <option value="{{ s.id }}">{{ s.name }} ({{ s.admission_number }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-weight: bold;">Exam Series</label>
+                            <input type="text" name="exam_series" class="form-control" placeholder="July 2026" style="width:100%; padding:10px; border-radius:4px; border:1px solid #ddd;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display:block; margin-bottom: 5px; font-weight: bold;">Required Amount</label>
+                                <input type="number" name="required_amount" class="form-control" style="width:100%; padding:10px; border-radius:4px; border:1px solid #ddd;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom: 5px; font-weight: bold;">Amount Paid</label>
+                                <input type="number" name="amount_paid" class="form-control" style="width:100%; padding:10px; border-radius:4px; border:1px solid #ddd;">
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <button type="submit" name="submit_payment" style="margin-top: 25px; width: 100%; padding: 14px; background: #2980b9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    {% if request.GET.edit_payment %}Update Payment{% else %}Record Payment{% endif %}
+                </button>
+            </form>
+        </div>
     </div>
 
     <hr style="border: 0; border-top: 1px solid #dcdde1; margin: 50px 0;">
 
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
         <div style="width: 12px; height: 35px; background: #e67e22; border-radius: 3px;"></div>
-        <h3 style="margin: 0; color: #2c3e50; font-size: 1.4em;">
-            {% if student %} 
-                Results Filtered for: <span style="color: #e67e22;">{{ student.name }}</span> ({{ student.admission_number }}) 
-            {% else %} 
-                General Academic Records Registry
-            {% endif %}
-        </h3>
+        <h3 style="margin: 0; color: #2c3e50; font-size: 1.4em;">General Academic Records Registry</h3>
     </div>
 
     {% regroup exams by student.course as course_list %}
-
     {% for course in course_list %}
-        <div class="course-group" style="margin-bottom: 60px; border: 1px solid #d1d8e0; border-radius: 10px; overflow: hidden; background: #fff;">
+        <div class="course-group printable-section" style="margin-bottom: 60px; border: 1px solid #d1d8e0; border-radius: 10px; overflow: hidden; background: #fff;">
             <div style="background: #34495e; color: white; padding: 18px 25px; font-size: 1.2em; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
                 <span>DEPARTMENT OF {{ course.grouper|upper }}</span>
-                <span style="font-size: 0.8em; opacity: 0.8; font-weight: normal;">KIPSEBWO VTC REGISTRY</span>
+                <button class="no-print" onclick="printSpecificSection(this)" style="background: #27ae60; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 0.7em;">Print Course Dept</button>
             </div>
 
             {% regroup course.list by year_of_study as year_list %}
-            
             {% for year in year_list %}
-                <div class="year-header" style="background: #f1f4f6; padding: 12px 25px; border-bottom: 1px solid #d1d8e0; font-weight: 700; color: #2980b9; font-size: 1em; letter-spacing: 0.5px;">
+                <div class="year-header" style="background: #f1f4f6; padding: 12px 25px; border-bottom: 1px solid #d1d8e0; font-weight: 700; color: #2980b9;">
                     📅 ACADEMIC YEAR {{ year.grouper }}
                 </div>
 
-                {% regroup year.list by semester as semester_list %}
-                
-                {% for sem in semester_list %}
-                    <div style="padding: 25px;">
-                        <h4 style="color: #e67e22; margin: 0 0 15px 0; font-size: 1.1em; text-decoration: underline; text-underline-offset: 5px;">Semester {{ sem.grouper }}</h4>
-                        
+                {% regroup year.list by term as term_list %}
+                {% for term_obj in term_list %}
+                    <div class="term-section" style="padding: 25px; border-bottom: 1px solid #eee;">
+                        <h4 style="color: #e67e22; margin: 0 0 15px 0;">Term {{ term_obj.grouper }}</h4>
                         <div style="overflow-x: auto;">
                             <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
                                 <thead>
-                                    <tr style="background: #f8f9fa; text-align: left; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; color: #7f8c8d;">
-                                        <th style="padding: 15px; border: 1px solid #eee;">Full Student Name</th>
-                                        <th style="padding: 15px; border: 1px solid #eee;">Module / Subject</th>
+                                    <tr style="background: #f8f9fa; text-align: left; font-size: 0.8em; text-transform: uppercase; color: #7f8c8d;">
+                                        <th style="padding: 15px; border: 1px solid #eee;">Student Name</th>
+                                        <th style="padding: 15px; border: 1px solid #eee;">Module</th>
                                         <th style="padding: 15px; border: 1px solid #eee; text-align: center;">CAT 1</th>
                                         <th style="padding: 15px; border: 1px solid #eee; text-align: center;">CAT 2</th>
                                         <th style="padding: 15px; border: 1px solid #eee; text-align: center;">End Term</th>
                                         <th style="padding: 15px; border: 1px solid #eee; text-align: center; background: #fff9db;">Total Avg</th>
                                         <th style="padding: 15px; border: 1px solid #eee; text-align: center;">Grade</th>
-                                        <th style="padding: 15px; border: 1px solid #eee; text-align: center;">Actions</th>
+                                        <th class="no-print" style="padding: 15px; border: 1px solid #eee; text-align: center;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for e in sem.list %}
-                                    <tr style="border-bottom: 1px solid #f1f4f6; transition: background 0.2s;">
+                                    {% for e in term_obj.list %}
+                                    <tr style="border-bottom: 1px solid #f1f4f6;">
                                         <td style="padding: 15px; border: 1px solid #eee; font-weight: 500;">{{ e.student.name }}</td>
-                                        <td style="padding: 15px; border: 1px solid #eee; color: #34495e;">{{ e.subject_name }}</td>
+                                        <td style="padding: 15px; border: 1px solid #eee;">{{ e.subject_name }}</td>
                                         <td style="padding: 15px; border: 1px solid #eee; text-align: center;">{{ e.cat_1 }}</td>
                                         <td style="padding: 15px; border: 1px solid #eee; text-align: center;">{{ e.cat_2 }}</td>
                                         <td style="padding: 15px; border: 1px solid #eee; text-align: center;">{{ e.end_term }}</td>
-                                        <td style="padding: 15px; border: 1px solid #eee; font-weight: bold; text-align: center; background: #fffdf2; color: #2c3e50;">
-                                            {{ e.total_marks|floatformat:1 }}%
-                                        </td>
+                                        <td style="padding: 15px; border: 1px solid #eee; font-weight: bold; text-align: center; background: #fffdf2;">{{ e.total_marks|floatformat:1 }}%</td>
                                         <td style="padding: 15px; border: 1px solid #eee; text-align: center;">
                                             {% if e.total_marks >= 70 %} <span style="background: #d4edda; color: #155724; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">A</span>
                                             {% elif e.total_marks >= 60 %} <span style="background: #d1ecf1; color: #0c5460; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">B</span>
                                             {% elif e.total_marks >= 50 %} <span style="background: #fff3cd; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">C</span>
-                                            {% elif e.total_marks >= 40 %} <span style="background: #ffeeba; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">D</span>
                                             {% else %} <span style="background: #f8d7da; color: #721c24; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">F</span> {% endif %}
                                         </td>
-                                        <td style="padding: 15px; border: 1px solid #eee; text-align: center;">
-                                            <a href="?edit={{ e.id }}{% if query %}&q={{ query }}{% endif %}" 
-                                               style="color: #2980b9; text-decoration: none; margin-right: 15px; font-size: 0.9em; font-weight: 600;">Edit</a>
-                                            
-                                            <form method="POST" style="display: inline;" onsubmit="return confirm('WARNING: Are you sure you want to permanently delete this academic record?');">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="delete_id" value="{{ e.id }}">
-                                                <button type="submit" style="background: none; border: none; color: #e74c3c; cursor: pointer; padding: 0; font-family: inherit; font-size: 0.9em; font-weight: 600;">Delete</button>
-                                            </form>
+                                        <td class="no-print" style="padding: 15px; border: 1px solid #eee; text-align: center;">
+                                            <a href="?edit={{ e.id }}" style="color: #2980b9; text-decoration: none; font-weight: 600;">Edit</a>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -151,10 +173,92 @@
                 {% endfor %}
             {% endfor %}
         </div>
-    {% empty %}
-        <div style="background: #f8f9fa; padding: 40px; border-radius: 10px; color: #7f8c8d; border: 2px dashed #d1d8e0; text-align: center;">
-            <p style="margin: 0; font-size: 1.1em;">No examination records found for the specified criteria.</p>
-        </div>
     {% endfor %}
+
+    <div class="printable-section" style="margin-top: 60px; background: #ffffff; border-radius: 12px; border: 1px solid #d1d8e0; overflow: hidden;">
+        <div style="background: #2c3e50; color: white; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.2em;">🇰🇪 KNEC EXAMINATIONS PAYMENT REGISTRY</h3>
+            <button onclick="printSpecificSection(this)" class="no-print" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">Print Payment List</button>
+        </div>
+        <div style="padding: 25px; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                <thead>
+                    <tr style="background: #f8f9fa; text-align: left; color: #7f8c8d; font-size: 0.9em; text-transform: uppercase;">
+                        <th style="padding: 15px; border-bottom: 2px solid #eee;">Student Name</th>
+                        <th style="padding: 15px; border-bottom: 2px solid #eee;">Adm No.</th>
+                        <th style="padding: 15px; border-bottom: 2px solid #eee;">Series</th>
+                        <th style="padding: 15px; border-bottom: 2px solid #eee; text-align: right;">Required (KES)</th>
+                        <th style="padding: 15px; border-bottom: 2px solid #eee; text-align: right;">Paid (KES)</th>
+                        <th style="padding: 15px; border-bottom: 2px solid #eee; text-align: right;">Balance (KES)</th>
+                        <th class="no-print" style="padding: 15px; border-bottom: 2px solid #eee; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in knec_payments %}
+                    <tr style="border-bottom: 1px solid #f1f4f6;">
+                        <td style="padding: 15px; font-weight: 500;">{{ payment.student.name }}</td>
+                        <td style="padding: 15px;">{{ payment.student.admission_number }}</td>
+                        <td style="padding: 15px;">{{ payment.exam_series }}</td>
+                        <td style="padding: 15px; text-align: right;">{{ payment.required_amount }}</td>
+                        <td style="padding: 15px; text-align: right; color: #27ae60; font-weight: bold;">{{ payment.amount_paid }}</td>
+                        <td style="padding: 15px; text-align: right; color: #e74c3c; font-weight: bold;">
+                          {{ payment.get_balance }} </td>
+                        <td class="no-print" style="padding: 15px; text-align: center;">
+                            <a href="?edit_payment={{ payment.id }}" style="color: #2980b9; text-decoration: none; font-weight: 600;">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="padding: 30px; text-align: center; color: #95a5a6;">No KNEC payment records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<script>
+    function printSpecificSection(btn) {
+        const section = btn.closest('.printable-section');
+        const originalContent = document.body.innerHTML;
+        const printContent = section.innerHTML;
+        
+        document.body.innerHTML = `
+            <div style="padding: 20px;">
+                <div style="text-align:center; border-bottom: 2px solid #333; margin-bottom: 20px;">
+                    <h1>KIPSEBWO VTC OFFICIAL RECORD</h1>
+                    <p>Printed on: ${new Date().toLocaleDateString()}</p>
+                </div>
+                ${printContent}
+            </div>
+        `;
+        window.print();
+        document.body.innerHTML = originalContent;
+        window.location.reload(); 
+    }
+</script>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+
+    @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        .printable-section { border: none !important; box-shadow: none !important; }
+        table { border: 1px solid #eee !important; }
+    }
+    
+    @media (max-width: 768px) {
+        div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
 {% endblock %}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; font-size: 11px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        h1 { margin: 0; font-size: 20px; }
+        h2 { margin: 5px 0; color: #444; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+        th { background-color: #f0f0f0; font-weight: bold; text-transform: uppercase; }
+        .footer { margin-top: 40px; display: flex; justify-content: space-between; font-weight: bold; }
+        .sig-line { border-top: 1px solid #000; width: 200px; margin-top: 40px; text-align: center; }
+
+        /* Print Specifics */
+        @media print {
+            @page { size: landscape; margin: 1cm; }
+            .no-print { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="header">
+        <h1>ST AUGUSTINE KIPSEBWO VOCATIONAL TRAINING CENTRE</h1>
+        <h2>PERMANENT ASSET REGISTER</h2>
+        <p>Report Date: {{ print_date|date:"d/m/Y H:i" }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Asset Description</th>
+                <th>Serial Number</th>
+                <th>Make/Model</th>
+                <th>Delivery Date</th>
+                <th>Current Location</th>
+                <th>Condition</th>
+                <th>Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.asset_description }}</td>
+                <td>{{ item.serial_number }}</td>
+                <td>{{ item.make_and_model }}</td>
+                <td>{{ item.date_of_delivery|date:"d/m/Y" }}</td>
+                <td>{{ item.current_location }}</td>
+                <td>{{ item.get_asset_condition_display }}</td>
+                <td>{{ item.remarks|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <div>
+            <div class="sig-line">Storekeeper Signature</div>
+        </div>
+        <div>
+            <div class="sig-line">Manager/Principal Signature</div>
+        </div>
+    </div>
+</body>
+</html>

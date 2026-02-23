@@ -35,13 +35,16 @@ urlpatterns = [
     path('finance/record-payment/', views.record_payment, name='record_payment'),
     path('receipt/<int:payment_id>/', views.generate_receipt, name='generate_receipt'),
     path('finance/structure/print/<int:pk>/', views.print_fee_structure, name='print_fee_structure'),
+    path('finance/print-transactions/', views.print_transactions, name='print_transactions'),
 
 
     # --- Examinations Department ---
     path('examinations/', views.examinations_view, name='examinations'),
-
+    path('examinations/print-report/<int:student_id>/', views.print_student_report, name='print_student_report'),
+    path('examinations/print-course/', views.print_course_results, name='print_course_results'),
     # --- Stores Department ---
     path('stores/', views.stores_view, name='stores'),
+    path('stores/print/<str:report_type>/', views.print_inventory, name='print_inventory'),
    
     path('stores/edit/<str:item_type>/<int:pk>/', views.edit_store_item, name='edit_store_item'),
     # --- CUSTOM ADMIN PANEL (User Management & Logs) ---

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Student, Examination, FeeStructure, Consumable, PermanentEquipment, UserProfile
+# Added KnecPayment to the imports below
+from .models import Student, Examination, FeeStructure, Consumable, PermanentEquipment, UserProfile, KnecPayment
 
 # --- REGISTRATION FORM ---
 class RegistrationForm(forms.ModelForm):
@@ -50,7 +51,6 @@ class RegistrationForm(forms.ModelForm):
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
 
-        # Check if passwords match
         if password and confirm_password and password != confirm_password:
             self.add_error('confirm_password', "Passwords do not match.")
         
@@ -78,6 +78,19 @@ class ExaminationForm(forms.ModelForm):
             'end_term': forms.NumberInput(attrs={'class': 'form-control'}),
             'year_of_study': forms.Select(attrs={'class': 'form-control'}),
             'semester': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+# --- KNEC PAYMENT FORM ---
+class KnecPaymentForm(forms.ModelForm):
+    class Meta:
+        model = KnecPayment
+        fields = ['student', 'exam_series', 'required_amount', 'amount_paid']
+        
+        widgets = {
+            'student': forms.Select(attrs={'class': 'form-control'}),
+            'exam_series': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. July 2026'}),
+            'required_amount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Total Amount'}),
+            'amount_paid': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Paid Amount'}),
         }
 
 # --- FEE FORM ---
@@ -114,6 +127,19 @@ class FeeForm(forms.ModelForm):
             self.add_error('scholar_type', 'Please select a scholar type.')
             
         return cleaned_data
+
+# --- FINANCE SEARCH FORM ---
+class TransactionFilterForm(forms.Form):
+    start_date = forms.DateField(
+        label="Start Date",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True
+    )
+    end_date = forms.DateField(
+        label="End Date",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True
+    )
 
 # --- UPDATED STORES FORMS ---
 class ConsumableForm(forms.ModelForm):
